@@ -1,15 +1,17 @@
-export EulerRodriguesParameters, ERP, ERPF64
+export EulerRodriguesParameters, ERP, ERP_F64
 export erpx, erpy, erpz
 
-@kwdef struct EulerRodriguesParameters{T} <: AbstractOrientation
+"""
+TODO
+"""
+@kwdef struct EulerRodriguesParameters{T} <: AbstractOrientation{T}
     x::T
     y::T
     z::T
     s::T
 end
-
 const ERP = EulerRodriguesParameters
-const ERPF64 = EulerRodriguesParameters{Float64}
+const ERP_F64 = EulerRodriguesParameters{Float64}
 
 ################
 # Constructors #
@@ -33,7 +35,7 @@ Base.zero(::ERP{T}) where {T} = ERP{T}(zero(T), zero(T), zero(T), one(T))
 "Creates a EulerRodriguesParameters representing no rotation."
 Base.zero(::Type{ERP{T}}) where {T} = ERP{T}(zero(T), zero(T), zero(T), one(T))
 
-"Create a random EulerRodriguesParameters following a uniform distribution law on SO(3)."
+"Create a random EulerRodriguesParameters following a uniform distribution on SO(3)."
 function Random.rand(rng::AbstractRNG, ::Random.SamplerType{ERP{T}}) where {T}
     return normalize(ERP(randn(rng, T), randn(rng, T), randn(rng, T), randn(rng, T)))
 end
@@ -328,113 +330,9 @@ function Base.show(io::IO, erp::EulerRodriguesParameters)
     print(io, "EulerRodriguesParameters(x = ", erp.x, ", y = ", erp.y, ", z = ", erp.z, ", s = ", erp.s, ")")
 end
 
-############################
-# Conversions to Phase Out #
-############################
-
-# TODO: Replace all of these with constructors.
-# TODO: Are we sure? What's the virtue of making a DCM type? Why not just use a matrix?
-
-"""
-    aa2erp(r, θ)
-
-Returns the EulerRodriguesParameters for a frame rotated by angle `θ` (rad) about unit
-axis `r`.
-"""
-function aa2erp(r, θ)
-    @assert length(r) == 3 "aa2erp requires 3-element vectors"
-    s, c = sincos(θ/2)
-    return EulerRodriguesParameters(s * r[1], s * r[2], s * r[3], c)
-end
-
-"Returns the unit axis of rotation and angle (rad) for the given Euler parameters."
-function erp2aa(erp::EulerRodriguesParameters{T}) where {T}
-    θ = 2 * acos(max(min(erp.s, one(T)), -one(T)))
-    m = sqrt(erp.x^2 + erp.y^2 + erp.z^2)
-    if m == zero(T)
-        r = SVector{3,T}(one(T), zero(T), zero(T))
-    else
-        r = SVector{3,T}(erp.x/m, erp.y/m, erp.z/m)
-    end
-    return (r, θ)
-end
-
-"Returns the EulerRodriguesParameters for the given direction cosine matrix."
-function dcm2erp(R)
-
-    # Split the conversion so as to divide by the largest possible number.
-    if R[1,1] + R[2,2] + R[3,3] >= 0
-        η4 = 0.5 * √(1. + R[1,1] + R[2,2] + R[3,3])
-        α  = 0.25 / η4 # Necessarily safe from above
-        return EulerRodriguesParameters(
-            α * (R[2,3] - R[3,2]),
-            α * (R[3,1] - R[1,3]),
-            α * (R[1,2] - R[2,1]),
-            η4,
-        )
-    elseif R[1,1] - R[2,2] - R[3,3] >= 0
-        η1 = 0.5 * √(1. + R[1,1] - R[2,2] - R[3,3])
-        α  = 0.25 / η1 # Necessarily safe from above
-        return EulerRodriguesParameters(
-            η1,
-            α * (R[1,2] + R[2,1]),
-            α * (R[3,1] + R[1,3]),
-            α * (R[2,3] - R[3,2]),
-        )
-    elseif - R[1,1] + R[2,2] - R[3,3] >= 0
-        η2 = 0.5 * √(1. - R[1,1] + R[2,2] - R[3,3])
-        α  = 0.25 / η2 # Necessarily safe from above
-        return EulerRodriguesParameters(
-            α * (R[1,2] + R[2,1]),
-            η2,
-            α * (R[3,2] + R[2,3]),
-            α * (R[3,1] - R[1,3]),
-        )
-    else
-        η3 = 0.5 * √(1. - R[1,1] - R[2,2] + R[3,3])
-        α  = 0.25 / η3 # Safe if R is a DCM
-        return EulerRodriguesParameters(
-            α * (R[1,3] + R[3,1]),
-            α * (R[3,2] + R[2,3]),
-            η3,
-            α * (R[1,2] - R[2,1]),
-        )
-    end
-
-end
-
-"Returns the direction cosine matrix for the given EulerRodriguesParameters."
-function erp2dcm(e::EulerRodriguesParameters)
-    x2 = e.x^2
-    y2 = e.y^2
-    z2 = e.z^2
-    s2 = e.s^2
-    return @SMatrix [
-        (x2 - y2 - z2 + s2)         2 * (e.x * e.y + e.s * e.z) 2 * (e.x * e.z - e.s * e.y);
-        2 * (e.y * e.x - e.s * e.z)        (-x2 + y2 - z2 + s2) 2 * (e.y * e.z + e.s * e.x);
-        2 * (e.z * e.x + e.s * e.y) 2 * (e.z * e.y - e.s * e.x)        (-x2 - y2 + z2 + s2);
-    ]
-end
-
-"Returns the EulerRodriguesParameters for the given rotation vector."
-function rv2erp(rv)
-    θ = norm(rv)
-    if θ == 0
-        T = eltype(rv)
-        return EulerRodriguesParameters{T}(zero(T), zero(T), zero(T), one(T))
-    end
-    return aa2erp(rv ./ θ, θ)
-end
-
-"Returns the rotation vector for the given EulerRodriguesParameters."
-function erp2rv(erp::EulerRodriguesParameters)
-    r, θ = erp2aa(erp)
-    return r .* θ
-end
-
-##############################
-# Conversions to Other Stuff #
-##############################
+########################################
+# Conversions to Non-Orientation Types #
+########################################
 
 # Get a Tuple of the internal values.
 function Base.convert(type::Type{NTuple{4, T}}, erp::EulerRodriguesParameters) where {T}

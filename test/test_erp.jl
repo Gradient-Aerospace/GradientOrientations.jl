@@ -1,13 +1,14 @@
-
 @testset "aa2erp, erp2aa, and compose" begin
 
-    r = [1., 0., 0.]
+    r = SA[1., 0., 0.]
     theta1 = 1.
     theta2 = 2.
-    ep1 = aa2erp(r, theta1)
-    erp2 = aa2erp(r, theta2)
-    epf = compose(erp2, ep1)
-    rf, thetaf = erp2aa(epf)
+    erp1 = aa2erp(AxisAngle(r, theta1))
+    erp2 = aa2erp(AxisAngle(r, theta2))
+    erpf = erp2 ⊗ erp1
+    @show rf, thetaf = erp2aa(erpf)
+    @show rf
+    @show thetaf
     @test norm(rf .- r) < 1e-10
     @test thetaf ≈ theta1 + theta2 atol=1e-8
 
@@ -15,41 +16,33 @@ end
 
 @testset "rv2erp, erp2rv, dcm2erp, erp2dcm" begin
 
-    r = [1/sqrt(2.), 1/sqrt(2.), 0.]
+    r = SA[1/sqrt(2.), 1/sqrt(2.), 0.]
     theta = -2.
-    rv = theta * r
+    rv = RV(theta * r)
     ep_from_rv = rv2erp(rv)
-    ep_from_aa = aa2erp(r, theta)
+    ep_from_aa = aa2erp(AxisAngle(r, theta))
     R = cos(theta) * Matrix(I, 3, 3) + (1 - cos(theta)) * (r * r') - sin(theta) * crs3(r)
-    ep_from_R = dcm2erp(R)
+    ep_from_R = dcm2erp(DCM(R))
     @test [ep_from_rv...] ≈ [ep_from_aa...] atol=1e-15
     @test [ep_from_rv...] ≈ [ep_from_R...] atol=1e-15
 
     rv2 = erp2rv(ep_from_aa)
-    @test rv2 ≈ rv atol=1e-12
+    @test rv2.vector ≈ rv.vector atol=1e-12
 
-    R2 = erp2dcm(ep_from_rv)
+    R2 = erp2dcm(ep_from_rv).matrix
     @test R2 ≈ R atol=1e-12
 
-    @test rv2erp([0., 0., 0.]) == zero(ERP{Float64})
+    @test rv2erp(RV(SA[0., 0., 0.])) == zero(ERP{Float64})
 
-    @test all(dcm2erp([ 1 0 0; 0 -1 0; 0 0 -1]) .≈ ERP(1., 0., 0., 0.))
-    @test all(dcm2erp([-1 0 0; 0  1 0; 0 0 -1]) .≈ ERP(0., 1., 0., 0.))
-    @test all(dcm2erp([-1 0 0; 0 -1 0; 0 0  1]) .≈ ERP(0., 0., 1., 0.))
+    @test all(dcm2erp(DCM_F64(@SMatrix [ 1 0 0; 0 -1 0; 0 0 -1])) .≈ ERP(1., 0., 0., 0.))
+    @test all(dcm2erp(DCM_F64(@SMatrix [-1 0 0; 0  1 0; 0 0 -1])) .≈ ERP(0., 1., 0., 0.))
+    @test all(dcm2erp(DCM_F64(@SMatrix [-1 0 0; 0 -1 0; 0 0  1])) .≈ ERP(0., 0., 1., 0.))
 
-end
-
-@testset "reframe with Vector" begin
-    v_A = [1., 0., 0.]
-    η_BA = rv2erp(π/4 * [0., 1., 0.])
-    v_B = reframe(η_BA, v_A)
-    @test typeof(v_B) == Vector{Float64}
-    @test v_B ≈ [1/sqrt(2), 0, 1/sqrt(2)]
 end
 
 @testset "reframe with SVector" begin
     v_A = SA[0., 2., 0.]
-    η_BA = rv2erp(π/4 * SA[0., 0., 1.])
+    η_BA = rv2erp(RV(π/4 * SA[0., 0., 1.]))
     v_B = reframe(η_BA, v_A)
     @test typeof(v_B) == SVector{3, Float64}
     @test reframe(η_BA, v_A) ≈ SA[2/sqrt(2), 2/sqrt(2), 0]
@@ -71,9 +64,9 @@ end
 
 @testset "rate" begin
 
-    r      = [1., 0., 0.]
+    r      = SA[1., 0., 0.]
     theta  = 0.
-    ep     = aa2erp(r, theta)
+    ep     = aa2erp(AxisAngle(r, theta))
     w      = 1. * r
     ep_dot = rate(ep, w)
 
@@ -88,9 +81,9 @@ end
     @test ep_dot.z ≈ cos(theta/2) * 1/2 * w[3]
     @test ep_dot.s ≈ -sin(theta/2) * 1/2 * (w ⋅ r)
 
-    r      = [0., 1., 0.]
+    r      = SA[0., 1., 0.]
     theta  = 1.
-    ep     = aa2erp(r, theta)
+    ep     = aa2erp(AxisAngle(r, theta))
     w      = 2. * r
     ep_dot = rate(ep, w)
 
@@ -100,9 +93,9 @@ end
     @test ep_dot.z ≈ cos(theta/2) * 1/2 * w[3]
     @test ep_dot.s ≈ -sin(theta/2) * 1/2 * (w ⋅ r)
 
-    r      = [0., 0., 1.]
+    r      = SA[0., 0., 1.]
     theta  = 2π - 0.001
-    ep     = aa2erp(r, theta)
+    ep     = aa2erp(AxisAngle(r, theta))
     w      = 3. * r
     ep_dot = rate(ep, w)
 
@@ -120,7 +113,7 @@ end
 
     # Define a function to get the magnitude of the error between two sets of EPs.
     angle_from_vector(ep) = 2 * asin(norm([ep.x, ep.y, ep.z]))
-    eperr(ep1, erp2) = angle_from_vector(compose(ep1, inv(erp2)))
+    eperr(ep1, erp2) = angle_from_vector(compose(ep1, inv(erp2))) # TODO: Replace with distance?
 
     # Let's set up a little sim where we have a set of EulerParameters. One will be the
     # truth values, propagated numerical integration (Euler method). Another will start at a
@@ -212,15 +205,15 @@ end
 @testset "erpx, erpy, erpz" begin
 
     # This just tests that I didn't have a typo, basically.
-    @test all(erpx(1.) .== aa2erp([1., 0., 0.], 1.))
-    @test all(erpy(2.) .== aa2erp([0., 1., 0.], 2.))
-    @test all(erpz(3.) .== aa2erp([0., 0., 1.], 3.))
+    @test all(erpx(1.) .== aa2erp(AxisAngle(SA[1., 0., 0.], 1.)))
+    @test all(erpy(2.) .== aa2erp(AxisAngle(SA[0., 1., 0.], 2.)))
+    @test all(erpz(3.) .== aa2erp(AxisAngle(SA[0., 0., 1.], 3.)))
 
     # Test that we can construct with an Irrational.
     @test erp2aa(erpx(π))[2] ≈ π
     @test erp2aa(erpy(π))[2] ≈ π
     @test erp2aa(erpz(π))[2] ≈ π
-    @test erp2aa(aa2erp([1/√(2), 1/√(2), 0.], π))[2] ≈ π
+    @test erp2aa(aa2erp(AxisAngle(SA[1/√(2), 1/√(2), 0.], 1π)))[2] ≈ π
 
 end
 
@@ -230,7 +223,7 @@ end
     a = ERP(1., 2., 3., -4.)
 
     b1 = a
-    b2 = other(a)
+    b2 = other(a) # TODO: "other" is meaningless for a non-normalized ERP.
     b3 = normalize(a)
     b4 = normalize(other(a))
 
@@ -245,7 +238,7 @@ end
 
     a = normalize(ERP(1., 2., 3., -4.))
 
-    η_diff_true = aa2erp([1., 0., 0.], π/8)
+    η_diff_true = aa2erp(AxisAngle(SA[1., 0., 0.], π/8))
 
     b1 = compose(η_diff_true, a)
     b2 = compose(η_diff_true, other(a))
