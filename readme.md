@@ -165,21 +165,61 @@ Eigen is a C++ library for linear algebra, and it features a Quaternion type. Th
 
 ```
 using GradientOrientations
-erp_b_wrt_a = ERP(...)
-v_a = SA[...]
+using StaticArrays
+erp_b_wrt_a = ERP(x = -0.39015349272073274, y = 0.44885619975114965, z = -0.5331968363460537, s = 0.6016722511245876)
+v_a = SA[ -0.09342155668355605, -0.5691321723949833, 0.18864021876469472]
 v_b = reframe(erp_b_wrt_a, v_a)
 ```
 
+This gives `SA[0.5384388474664465, -0.27833775489103457, -0.02891108412057084]`.
+
+For eigen, the scalar moves first, and the x, y, and z components are negated (expressing the inverted rotation we'd expect for a library that implements vector/active rotations).
+
 ```
+#include <iostream>
+#include <Eigen/Dense>
 #include <Eigen/Geometry>
-Eigen::Quaterniond q_a_to_b(...); // Note the change in sign on the vector part.
-Eigen::Vector3d v_a(...);
-Eigen::Vector3d v_b = q_a_to_b * v_a;
+
+int main() {
+  Eigen::Quaterniond q_a_to_b(0.6016722511245876, 0.39015349272073274, -0.44885619975114965, 0.5331968363460537);
+  Eigen::Vector3d v_a(-0.09342155668355605, -0.5691321723949833, 0.18864021876469472);
+  Eigen::Vector3d v_b = q_a_to_b * v_a;
+  std::cout << v_b << std::endl;
+}
 ```
+
+This gives the same output as the above.
 
 The composition rules then follow the same pattern:
 
-... TODO ...
+```
+erp_c_wrt_b = ERP(x = -0.26328146006533937, y = 0.3194557972432347, z = -0.547884663730034, s = 0.7269479084796793)
+erp_c_wrt_a = compose(erp_c_wrt_b, erp_b_wrt_a)
+v_c = reframe(erp_c_wrt_a, v_a)
+```
+
+which gives `SA[0.37890885798068275, 0.28686794099866375, 0.37730493081162575]`.
+
+For Eigen, we add the following to the end of `main`:
+
+```
+  Eigen::Quaterniond q_b_to_c(0.7269479084796793, 0.26328146006533937, -0.3194557972432347, 0.547884663730034);
+  Eigen::Quaterniond q_a_to_c = q_b_to_c * q_a_to_b;
+  Eigen::Vector3d v_c = q_a_to_c * v_a;
+  std::cout << v_c << std::endl;
+```
+
+which gives the same result.
+
+Similarly, converting `erp_b_wrt_a` to a DCM gives the same results as converting `q_a_to_b` to a Matrix3d in Eigen.
+
+This is the export process:
+
+```
+function export_erp_to_eigen_quat(erp::ERP)
+    retrun [erp.s, -erp.x, -erp.y, -erp.z]
+end
+```
 
 ### Exporting to Rotations.jl
 
@@ -222,6 +262,7 @@ which gives `SA[0.37890885798068275, 0.28686794099866375, 0.37730493081162575]`.
 For Rotations.jl:
 
 ```
+# Move the scalar first, and swap the sign of the remaining elements (invert the rotation).
 q_b_to_c = QuatRotation(0.7269479084796793, 0.26328146006533937, -0.3194557972432347, 0.547884663730034)
 q_a_to_c = q_b_to_c * q_a_to_b
 v_c = q_a_to_c * v_a
@@ -230,3 +271,11 @@ v_c = q_a_to_c * v_a
 which also gives `SA[0.37890885798068275, 0.28686794099866375, 0.37730493081162575]`.
 
 Note that `erp2dcm(erp_b_wrt_a)` and `RotMatrix(q_a_to_b)` also give the same matrices.
+
+This is the export process:
+
+```
+function export_erp_to_rotations_quatrotation(erp::ERP)
+    retrun QuatRotation(erp.s, -erp.x, -erp.y, -erp.z)
+end
+```
