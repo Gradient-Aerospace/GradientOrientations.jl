@@ -64,16 +64,12 @@ end
 
 @testset "rate" begin
 
+    # Test a rotation rate about x.
     r      = SA[1., 0., 0.]
     theta  = 0.
     ep     = aa2erp(AxisAngle(r, theta))
     w      = 1. * r
     ep_dot = rate(ep, w)
-
-    # While we're here, test that this results in zero rotation.
-    @test all(ep .≈ ERP(0., 0., 0., 1.))
-    @test all(ep .≈ ERP([0., 0., 0., 1.]))
-    @test all(ep .≈ zero(ERP{Float64}))
 
     # These are only true for rotations about a single axis.
     @test ep_dot.x ≈ cos(theta/2) * 1/2 * w[1]
@@ -81,6 +77,7 @@ end
     @test ep_dot.z ≈ cos(theta/2) * 1/2 * w[3]
     @test ep_dot.s ≈ -sin(theta/2) * 1/2 * (w ⋅ r)
 
+    # Test a rotation rate about y.
     r      = SA[0., 1., 0.]
     theta  = 1.
     ep     = aa2erp(AxisAngle(r, theta))
@@ -93,6 +90,7 @@ end
     @test ep_dot.z ≈ cos(theta/2) * 1/2 * w[3]
     @test ep_dot.s ≈ -sin(theta/2) * 1/2 * (w ⋅ r)
 
+    # Test a rotation rate about z.
     r      = SA[0., 0., 1.]
     theta  = 2π - 0.001
     ep     = aa2erp(AxisAngle(r, theta))
@@ -105,7 +103,16 @@ end
     @test ep_dot.z ≈ cos(theta/2) * 1/2 * w[3]
     @test ep_dot.s ≈ -sin(theta/2) * 1/2 * (w ⋅ r)
 
-    @test all(ep_dot .≈ 1/2 * compose(ERP(w..., 0.), ep))
+    # Now rotate around a random axis, and see if the resulting change in rotation is what
+    # we'd predict.
+    r = normalize(SA[1., 2., 3.])
+    w_mag = 3.
+    w = w_mag * r
+    ep = zero(ERP_F64)
+    dt = 1e-6
+    ep2 = normalize(ep + dt * rate(ep, w))
+    @test difference(ep2, ep) ≈ compose(rv2erp(RV(w * dt)), ep) atol = w_mag * dt * 1e-3
+    @test distance(ep2, ep) ≈ w_mag * dt atol = w_mag * dt * 1e-3
 
 end
 

@@ -19,8 +19,25 @@
         expected = erpz(π/4)
         @test distance(result, expected) ≈ 0. atol = eps(1.)
 
+        # At t=0.1, should get a tenth of the rotation (45 degrees about z)
+        result = interpolate(ep_start, ep_end, 0.1)
+        expected = erpz(π/2 / 10)
+        @test distance(result, expected) ≈ 0. atol = eps(1.)
+
         # Check that result is normalized
         @test norm(result) ≈ 1.0
+
+        # Just test a variety of points that don't start from identity.
+        a = erpx(deg2rad(10))
+        b = erpx(deg2rad(40))
+        rad2deg(erp2aa(interpolate(a, b, 0.0)).angle) ≈ 10.
+        rad2deg(erp2aa(interpolate(a, b, 0.1)).angle) ≈ 10. + 0.1 * 30
+        rad2deg(erp2aa(interpolate(a, b, 0.5)).angle) ≈ 10. + 0.5 * 30
+        rad2deg(erp2aa(interpolate(a, b, 0.9)).angle) ≈ 10. + 0.9 * 30
+        rad2deg(erp2aa(interpolate(a, b, 1.0)).angle) ≈ 40.
+
+        # Also, test that zero rotation doesn't break anything.
+        @test distance(interpolate(a, a, 0.4), a) ≈ 0. atol = eps(2π)
 
     end
 

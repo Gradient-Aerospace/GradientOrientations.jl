@@ -102,8 +102,23 @@ Base.convert(::Type{RV}, dcm::DCM) = dcm2rv(dcm) # Type is not specified on the 
 Base.convert(::Type{RV{T}}, dcm::DCM{T}) where {T} = dcm2rv(dcm) # Type is not specified on the LHS.
 
 "Returns the RollPitchYaw for the given DirectionCosineMatrix."
-function dcm2rpy(dcm::DCM)
-    return erp2rpy(dcm2erp(dcm)) # TODO: Be more direct.
+function dcm2rpy(dcm::DCM{T}) where {T}
+    # Zipfel, 75
+    sin_pitch = -dcm.matrix[1, 3]
+    if sin_pitch <= -one(T) + eps(one(T))
+        pitch = -π/2
+        roll = zero(T)
+        yaw = atan(-dcm.matrix[2, 1], dcm.matrix[2, 2])
+    elseif sin_pitch >= one(T) - eps(one(T))
+        pitch = π/2
+        roll = zero(T)
+        yaw = atan(-dcm.matrix[2, 1], dcm.matrix[2, 2])
+    else
+        pitch = asin(clamp(sin_pitch, -one(T), one(T)))
+        yaw = atan(dcm.matrix[1, 2], dcm.matrix[1, 1])
+        roll = atan(dcm.matrix[2, 3], dcm.matrix[3, 3])
+    end
+    return RPY{T}(roll, pitch, yaw)
 end
 Base.convert(::Type{RPY}, dcm::DCM) = dcm2rpy(dcm) # Type is not specified on the LHS.
 Base.convert(::Type{RPY{T}}, dcm::DCM{T}) where {T} = dcm2rpy(dcm) # Type is not specified on the LHS.
@@ -154,30 +169,26 @@ Base.convert(::Type{RV{T}}, erp::ERP{T}) where {T} = erp2rv(erp) # Types are the
 "Returns the RollPitchYaw for the given EulerRodriguesParameters."
 function erp2rpy(erp::EulerRodriguesParameters{T}) where {T}
 
-    w = erp.s
-    x = erp.x
-    y = erp.y
-    z = erp.z
-
-    # Roll (x-axis rotation)
-    sinr_cosp = 2 * (w * x + y * z)
-    cosr_cosp = 1 - 2 * (x^2 + y^2)
-    roll = atan(sinr_cosp, cosr_cosp)
-
-    # Pitch (y-axis rotation)
-    sinp = 2 * (w * y - z * x)
-
-    # Clamp value to [-1, 1] to handle potential numerical noise
-    if abs(sinp) >= 1
-        pitch = copysign(π / 2, sinp) # 90 degrees if out of range
+    # Zipfel, 127
+    q0 = erp.s
+    q1 = erp.x
+    q2 = erp.y
+    q3 = erp.z
+    tol = 1e-12
+    sin_pitch = 2 * (q0 * q2 - q1 * q3)
+    if sin_pitch >= one(T) - tol
+        pitch = π/2
+        roll = zero(T) # Pitch is indistinguishable from yaw here.
+        yaw = 2 * atan(-q1, q2) # From inspection of eq. 4.78
+    elseif sin_pitch < -one(T) + tol
+        pitch = -π/2
+        roll = zero(T) # Pitch is indistinguishable from yaw here.
+        yaw = 2 * atan(-q1, q2) # From inspection of eq. 4.78
     else
-        pitch = asin(sinp)
+        pitch = asin(sin_pitch)
+        yaw = atan(2 * (q1 * q2 + q0 * q3), q0^2 + q1^2 - q2^2 - q3^2)
+        roll = atan(2 * (q2 * q3 + q0 * q1), q0^2 - q1^2 - q2^2 + q3^2)
     end
-
-    # Yaw (z-axis rotation)
-    siny_cosp = 2 * (w * z + x * y)
-    cosy_cosp = 1 - 2 * (y^2 + z^2)
-    yaw = atan(siny_cosp, cosy_cosp)
 
     return RPY{T}(roll, pitch, yaw)
 
@@ -234,17 +245,30 @@ Base.convert(::Type{AA{T}}, rpy::RPY{T}) where {T} = rpy2aa(rpy) # Type is not s
 
 "Returns the DirectionCosineMatrix for the given RollPitchYaw."
 function rpy2dcm(rpy::RPY)
-    return erp2dcm(rpy2erp(rpy)) # TODO: Be more direct.
+    sy, cy = sincos(rpy.yaw)
+    sp, cp = sincos(rpy.pitch)
+    sr, cr = sincos(rpy.roll)
+    return DCM(
+        @SMatrix [ # Zipfel 75, eq. 3.14
+            cy * cp                    sy * cp                      -sp;
+            cy * sp * sr - sy * cr     sy * sp * sr + cy * cr       cp * sr;
+            cy * sp * cr + sy * sr     sy * sp * cr - cy * sr       cp * sr;
+        ]
+    )
 end
 Base.convert(::Type{DCM}, rpy::RPY) = rpy2dcm(rpy) # Type is not specified on the LHS.
 Base.convert(::Type{DCM{T}}, rpy::RPY{T}) where {T} = rpy2dcm(rpy) # Type is not specified on the LHS.
 
 "Returns the EulerRodriguesParameters for the given RollPitchYaw."
 function rpy2erp(rpy::RPY)
-    return compose( # TODO: Be more direct.
-        erpx(rpy.roll),
-        erpy(rpy.pitch),
-        erpz(rpy.yaw),
+    sy, cy = sincos(rpy.yaw / 2)
+    sp, cp = sincos(rpy.pitch / 2)
+    sr, cr = sincos(rpy.roll / 2)
+    return ERP( # Zipfel 126, eq. 4.78
+        cy * cp * sr - sy * sp * cr,
+        cy * sp * cr + sy * cp * sr,
+        sy * cp * cr - cy * sp * sr,
+        cy * cp * cr + sy * sp * sr,
     )
 end
 Base.convert(::Type{ERP}, rpy::RPY) = rpy2erp(rpy) # Type is not specified on the LHS.

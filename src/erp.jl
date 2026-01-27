@@ -147,11 +147,13 @@ the second is the rotation of B wrt A, the result is the rotation of frame C wrt
 frame A. (Shuster eq. 173)
 """
 function compose(a::EulerRodriguesParameters, b::EulerRodriguesParameters)
-    return EulerRodriguesParameters(
-         a.s * b.x + a.z * b.y - a.y * b.z + a.x * b.s,
-        -a.z * b.x + a.s * b.y + a.x * b.z + a.y * b.s,
-         a.y * b.x - a.x * b.y + a.s * b.z + a.z * b.s,
-        -a.x * b.x - a.y * b.y - a.z * b.z + a.s * b.s,
+    return normalize(
+        EulerRodriguesParameters(
+            a.s * b.x + a.z * b.y - a.y * b.z + a.x * b.s,
+            -a.z * b.x + a.s * b.y + a.x * b.z + a.y * b.s,
+            a.y * b.x - a.x * b.y + a.s * b.z + a.z * b.s,
+            -a.x * b.x - a.y * b.y - a.z * b.z + a.s * b.s,
+        )
     )
 end
 
@@ -214,20 +216,31 @@ References
 - https://en.wikipedia.org/wiki/Slerp
 - https://blog.magnum.graphics/backstage/the-unnecessarily-short-ways-to-do-a-quaternion-slerp/
 """
-function interpolate(ep_start::EulerRodriguesParameters, ep_end::EulerRodriguesParameters, f; shortest_path::Bool = true)
+function interpolate(ep_start::EulerRodriguesParameters{T}, ep_end::EulerRodriguesParameters{T}, f; shortest_path::Bool = true) where {T}
 
     if f < 0 || f > 1
         throw(DomainError(f, "f was $f but must be in the range [0, 1]."))
     end
+    if iszero(f)
+        return ep_start
+    end
+    if isone(f)
+        return ep_end
+    end
 
-    # This is the intuitive implementation, but the below is faster.
+    # This is the intuitive implementation, but what's below is faster.
     #
-    #   axis, angle = erp2aa(difference(b, a))
-    #   return normalize(compose(aa2erp(axis, angle * f), a))
+    #   aa = erp2aa(smallest(difference(ep_end, ep_start)))
+    #   return normalize(compose(aa2erp(AxisAngle(aa.axis, aa.angle * f)), ep_start))
     #
 
     d = dot(ep_start, ep_end)
-    θ = acos(abs(d))
+    if d >= one(T)
+        return ep_start
+    elseif d <= -one(T)
+        return ep_start
+    end
+    θ = acos(clamp(abs(d), zero(T), one(T)))
 
     if shortest_path
         # Flip `ep_start` if there is a shorter path.
@@ -236,6 +249,7 @@ function interpolate(ep_start::EulerRodriguesParameters, ep_end::EulerRodriguesP
         ep_startp = ep_start
     end
 
+    # If -1 < cos(θ) < 1, then sin(θ) should be > 0.
     c1 = sin((1 - f) * θ) / sin(θ)
     c2 = sin(f * θ) / sin(θ)
     return normalize(c1 * ep_startp + c2 * ep_end)
