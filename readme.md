@@ -6,103 +6,227 @@ This package is useful for specifying the orientation of a thing relative to ano
 
 The available orientation types are:
 
-* `EulerRodriguesParameters` (aka `ERP`)
+* `AxisAngle` (aka `AA`)
 * `DirectionCosineMatrix` (aka `DCM`)
-* `RotationVector`
-* `AxisAngle`
-* `ModifiedRodriguesParameters` (MRP)
+* `EulerRodriguesParameters` (aka `ERP`)
+* `RotationVector` (aka `RV`)
+* `RollPitchyaw` (aka `RPY`)
 
-Euler-Rodrigues Parameters are equivalent to "quaternions" using the JPL/Shuster convention common in aerospace. The scalar part is last. The composition rules are such that the order of operations works like direction cosine matrices. That is if `erp_BA` is the orientation of B wrt A and `erp_CB` is the orientation of C wrt B, then the orientation of C wrt A, `erp_CA`, is `compose(erp_CB, erp_BA)`, which is the same as `ERP(DCM(erp_CB) * DCM(erp_BA))`.
+## Basic Example
 
-Just like $\otimes$ is often used to mean "composition" for Euler-Rodrigues symmetric parameters, this package uses the `compose` function two compose two orientations rather than `*`. Similarly, it uses `reframe(erp, v)` to express `v` in a frame orientation according to `erp`, rather than `erp * v`.
+Suppose that frame B is rotated 45 degrees from frame A about the (common) `x` axis. Here's how we specify that, using the AxisAngle orientation type as an example:
 
-# Comparison With Other Packages
-
-Rotations.jl is an excellent package that implements _active rotations_. When constructing its rotations, you say, "This _does something_ to a vector. `RotX(pi/4) * v` rotates `v` by `pi/4` radians about the x axis. This is exactly the opposite of Orientations, where `erp_BA = erpx(pi/4)` says, "frame B is rotated pi/4 radians from frame A", and if `v_A` is a vector expressed in frame A, then `v_B = reframe(erp_BA, v_A)` is that same vector expressed in frame B.
-
-## Documentation
-
-### Operations on Orientations
-
-* [`compose`](@ref): "Composes" two orientations, with the same order and meaning as the multiplication of two direction cosine matrices.
-* [`difference`](@ref): Returns orientation corresponding to the difference in two orientations.
-* [`interpolate`](@ref): Interpolates between two orientations.
-* [`inv`](@ref): Inverts an orientation (`compose(η, inv(η))` means "no rotation").
-* [`normalize`](@ref): Divides the Euler-Rodrigues parameters by their 2-norm for a proper unit-norm orientation. (Euler-Rodrigues parameters are _not_ automatically normalized in other operations.)
-* [`other`](@ref): Returns an equivalent orientation, going around the opposite rotation axis -- going the "other way around".
-* [`rate`](@ref): Returns the time-derivative orientation given a rotation rate expressed in the "this" frame (as opposed to the "wrt that" frame).
-* [`reframe`](@ref): Given the orientation of frame B wrt A and a vector expressed in A, this returns the vector expressed in B (see above). Given a Vector for the vector input, this will return a Vector. Given a Tuple, it will return a Tuple. Given any other type, `T`, it will attemp to construct it as `T(v1, v2, v3)` (works for `SVectors` from `StaticArrays` for instance).
-* [`smallest`](@ref): Returns the representation with the smaller rotation angle from the reference -- the "shortest way around".
-
-### Conversions
-
-TODO: Should we keep these or rely on constructors?
-
-* [`aa2ep`](@ref): Converts axis-angle representation to Euler-Rodrigues parameters
-* [`ep2aa`](@ref): Converts Euler-Rodrigues parameters to axis-angle representation (the axis will be a tuple)
-* [`rv2ep`](@ref): Converts a rotation vector to Euler-Rodrigues parameters
-* [`dcm2ep`](@ref): Converts a direction cosine matrix to Euler-Rodrigues parameters
-
-## Euler-Rodrigues Parameters
-
-This is an implementation of Euler-Rodrigues symmetric parameters, as described by Shuster in [A Survey of Attitude Representations](http://malcolmdshuster.com/Pub_1993h_J_Repsurv_scan.pdf). These are equivalent to unit quaternions used for rotations, but whereas quaternion operations are more general, have many competing conventions, and typically represent "vector" rotations rather than "frame" rotations, Euler parameters are used only for representations of orientation (frame rotations) and can be implemented directly from Shuster's paper without confusion.
-
-The conventions here are that the rotation describes how the frame is rotated, the scalar part is last, and EP "composition" has the same order of arguments as rotation matrices for the equivalent functionalitly, all consistent with Shuster.
-
-Note that for speed and other reasons, EP are not automatically normalized after calculations. Feel free to normalize when that makes sense for your application.
-
-## TODO: Documentation of other types.
-
-## Example
-
-Let's consider two frames, frame A and frame B, with B rotated 45 degrees from frame A about its y-axis.
-
-```julia
-r = [0., 1., 0.] # Rotation axis
-θ = π/4 # Rotation angle
-η_BA = aa2erp(r, θ) # Euler parameters for the orientation of B wrt A, from axis-angle notation
-# output
-4-element EP{Float64}:
- 0.0
- 0.3826834323650898
- 0.0
- 0.9238795325112867
+```
+using GradientOrientation
+using StaticArrays # For the static vector type
+aa_b_wrt_a = AxisAngle(SA[1., 0., 0.], deg2rad(45))
 ```
 
-If something were 2 units along the A frame's x axis, that same vector expressed in B would be `[√2, 0, √2]`.
+Suppose we know how some vector is expressed in frame A. The way that vector would be expressed in frame B is given by the `reframe` function:
 
-```julia
-v_A = [2., 0., 0.]
-v_B = reframe(η_BA, v_A)
-# output
-3-element Vector{Float64}:
- 1.414213562373095
- 0.0
- 1.4142135623730951
+```
+v_in_b = reframe(aa_b_wrt_a, v_in_a)
 ```
 
-Now consider frame C rotated 45 degree from B about B's z axis.
+In this sense, orientations imply frame rotation (passive rotations).
 
-```julia
-η_CB = aa2erp([0., 0., 1.], π/4)
-v_C = reframe(η_CB, v_B)
-# output
-3-element Vector{Float64}:
-  0.9999999999999998
- -1.0
-  1.4142135623730951
+If frame C is rotated 50 degrees from frame B about the axis `1/√3 * [1., 1., 1.]` (in either B or C, the rotation axis being necessarily common to both), we could specify frame C with respect to (wrt) frame A as using the `compose` function.
+
+```
+aa_c_wrt_b = AxisAngle(1/√3 * [1., 1., 1.], deg2rad(50))
+aa_c_wrt_a = compose(aa_c_wrt_b, aa_b_wrt_a)
 ```
 
-We can "compose" the two rotations to represent C wrt A, in the same order as rotation matrices:
+and of course we now have:
 
-```julia
-η_CA = compose(η_CB, η_BA)
-v_C = reframe(η_CA, v_A)
-# output
-3-element Vector{Float64}:
-  0.9999999999999998
- -0.9999999999999999
-  1.414213562373095
+```
+v_in_c = reframe(aa_c_wrt_a, v_in_a)
 ```
 
-Naturally, `v_C` is the same either way.
+All orientation types behave in exactly this way, with the same order of operations, etc. In general, you don't have to even know which type of orientation you're working with to use it correctly.
+
+## Conversions
+
+Converting from one type to another can be accomplished with the `Base.convert` function, as in:
+
+```
+dcm_b_wrt_a = convert(DCM, aa_b_wrt_a)
+erp_b_wrt_a = convert(ERP, aa_b_wrt_a)
+rv_b_wrt_a  = convert(RV,  aa_b_wrt_a)
+rpy_b_wrt_a = convert(RPY, aa_b_wrt_a)
+```
+
+Those `convert` methods actually call the underlying functions for conversion.
+
+```
+dcm_b_wrt_a = aa2dcm(aa_b_wrt_a)
+erp_b_wrt_a = aa2erp(aa_b_wrt_a)
+rv_b_wrt_a = aa2rv(aa_b_wrt_a)
+rpy_b_wrt_a = aa2rpy(aa_b_wrt_a)
+```
+
+Similar functions with obvious names exist to convert between all available types.
+
+Where a direct, numerically stable conversion from one type directly to another exists, that will be the underlying method. Where a direct conversion does not exist, the right-hand type will be converted to Euler-Rodrigues Parameters and then from there to the desired type. (All orientation types are expected to have a path to `EulerRodriguesParameters`.
+
+Note that the RollPitchYaw type implies that the intended frame is oriented `roll` around the x axis of a frame that's oriented `pitch` around the y axis of a frame that's oriented `yaw` around the z axis of the reference frame. That is, the following are equivalent:
+
+```
+rpy_b_wrt_a = RPY(0.1, 0.2, 0.3)
+erp_b_wrt_a = compose(erpx(0.1), erpy(0.2), erpz(0.3))
+rpy_b_wrt_a = erp2rpy(erp)
+```
+
+## Operations
+
+* `reframe(b_wrt_a, v_a)`: If `v_a` is a vector expressed in frame A and `b_wrt_a` is the orientation of frame B wrt frame A (any type of orientation will do), then this returns the same vector expressed in B.
+* `compose(c_wrt_b, b_wrt_a)`: Returns the orientation of C wrt A with the same type as the inputs.
+* `difference(c_wrt_a, b_wrt_a)`: Returns the orientation of C wrt B with the same type as the inputs.
+* `distance`: Returns the rotation angle of the orientation, the "smallest way around", in radians.
+* `interpolate(o1, o2, f)`: Interpolates (spherically) from orientation 1 to orientation 2 (both wrt the same reference) using `f` in the inclusive range [0, 1].
+* `Base.inv(b_wrt_a)`: Inverts the orientation, returning A wrt C.
+* `Base.zero(type)`: Returns an orientation of the given type with zero rotation from the reference.
+* `Random.rand(rng, type)`: Returns a random orientation of the given type (any of the available orientation types) drawn uniformly from SO(3).
+
+The `⊗` operator (`\otimes`) can also be used for composition. That is, `a ⊗ b == compose(a, b)`.
+
+For `EulerRodriguesParameters`:
+
+* `rate(erp_b_wrt_a, omega_b_wrt_a_in_b)`: Returns the derivative over time of the given ERP using the given rotation rate. The return type will be an ERP type, though obviously it will not have a unit norm and will not, itself, represent an orientation. This is useful for numerical integration.
+* `other`: Returns an ERP that rotates "the other way around".
+* `smallest`: Returns an ERP that is equivalent to the input but is the "shortest way around".
+* `LinearAlgebra.normalize`: Returns a normalized version of an ERP -- useful after operations such as numerical integration.
+
+The `DirectionCosineMatrix` also functions like a matrix in that it supports the `*` operator. So you can compose DCMs using *, and you can "reframe" a vector using `*` as well.
+
+...
+
+## Construction
+
+Here is an example of constructing each type.
+
+For `AxisAngle`, provide the axis first and then the angle:
+
+```
+AA(SA[1., 0., 0.], 0.)
+```
+
+For convenience, `aax`, `aay`, and `aaz` exist to create orientations rotated about a given primary axis.
+
+For `DirectionCosineMatrix`, give the matrix itself:
+
+```
+DCM(
+    @SMatrix [
+        1. 0. 0.;
+        0. 1. 0.;
+        0. 0. 1.;
+    ]
+)
+```
+
+For convenience, `Rx`, `Ry`, and `Rz` exist to create DCMs rotated about a given primary axis.
+
+For `EulerRodriguesParameters`, give each element. The scalar is last. The following corresponds to "no rotation":
+
+```
+ERP(0., 0., 0., 1.)
+ERP(; x = 0., y = 0., z = 0., s = 1.)
+```
+
+Similarly, `erpx`, `erpy`, and `erpz` all exist.
+
+For `RotationVector`, give the vector:
+
+```
+RV(SA[0., 0., 0.])
+```
+
+For `RollPitchYaw`, provide roll, pitch, and yaw:
+
+```
+RPY(0., 0., 0.)
+RPY(; roll = 0., pitch = 0., yaw = 0.)
+```
+
+## Human Interface Types
+
+There are a couple of types whose only purpose (in this package) is human input and output. For example, there's a type called `RPYDeg` that lets the user specify the angles in degrees. That type should be converted to `RPY` either via `convert(RPY, my_rpy_deg)` or `rad2deg(my_rpy_deg)`. The `RPY` type is what should be used by the program.
+
+`AADeg` is the other "human interface" type.
+
+## Where Are The Quaternions?
+
+The reader may notice that there is no "quaternion" type. This is just nomenclature. The word "quaternion" is used with so many different conventions that any time the word "quaternion" appears on an interface between two systems, a healthy discussion (and usually several examples) are necessary to describe what is actually meant. This package chooses to bypass that nomenclatural minefield. Instead, this package uses "Euler-Rodrigues Parameters", which is unambiguously described by Shuster in "A Survey of Attitude Representations", freely available [here]https://www.malcolmdshuster.com/Doorway_Pubs-1970-1998.htm). This type, which he also calls "the quaternion of rotation" (JPL conventions), has consistent rules and conversions to the other types implemented here. More to the point, this type has all of the advantages of (in fact, _is_) a quaternion of rotation (a minimal representation of SO(3), numerical stability, good behavior under numerical integration, good conversion to and from other types) without the confusion surrounding the conventions (scalar first or last? is vector or frame rotation implied? what are the rules of composition, and is that the same thing as quaternion multiplication? if you right-multiply a vector, is that the same as right-multiplying the same vector with a DCM obtained from the conversion of the quaternion to a DCM?).
+
+### Exporting to Eigen
+
+Eigen is a C++ library for linear algebra, and it features a Quaternion type. The following two snippets give the same results:
+
+```
+using GradientOrientations
+erp_b_wrt_a = ERP(...)
+v_a = SA[...]
+v_b = reframe(erp_b_wrt_a, v_a)
+```
+
+```
+#include <Eigen/Geometry>
+Eigen::Quaterniond q_a_to_b(...); // Note the change in sign on the vector part.
+Eigen::Vector3d v_a(...);
+Eigen::Vector3d v_b = q_a_to_b * v_a;
+```
+
+The composition rules then follow the same pattern:
+
+... TODO ...
+
+### Exporting to Rotations.jl
+
+Rotations.jl is an excellent package that implements _active rotations_. When constructing its rotations, you say, "This _does something_ to a vector." That is, `RotX(pi/4) * v` rotates `v` by `pi/4` radians about the x axis. This is exactly the opposite of GradientOrientations, where `erp_BA = erpx(pi/4)` says, "frame B is rotated pi/4 radians from frame A", and if `v_A` is a vector expressed in frame A, then `v_B = reframe(erp_BA, v_A)` is that same vector expressed in frame B.
+
+The following give the same results:
+
+```
+using GradientOrientations
+using StaticArrays
+erp_b_wrt_a = ERP(x = -0.39015349272073274, y = 0.44885619975114965, z = -0.5331968363460537, s = 0.6016722511245876)
+v_a = SA[ -0.09342155668355605, -0.5691321723949833, 0.18864021876469472]
+v_b = reframe(erp_b_wrt_a, v_a)
+```
+
+This gives `SA[0.5384388474664465, -0.27833775489103457, -0.02891108412057084]`.
+
+```
+using Rotations
+using StaticArrays
+
+# Move the scalar first, and swap the sign of the remaining elements (invert the rotation).
+q_a_to_b = QuatRotation(0.6016722511245876, 0.39015349272073274, -0.44885619975114965, 0.5331968363460537)
+v_a = SA[ -0.09342155668355605, -0.5691321723949833, 0.18864021876469472] # Same as above.
+v_b = q_a_to_b * v_a
+```
+
+This gives `SA[0.5384388474664465, -0.27833775489103457, -0.02891108412057084]`, the same as the above.
+
+Extending the examples for composition (quaternion multiplication in Rotations.jl), here's GradientOrientations.jl:
+
+```
+erp_c_wrt_b = ERP(x = -0.26328146006533937, y = 0.3194557972432347, z = -0.547884663730034, s = 0.7269479084796793)
+erp_c_wrt_a = compose(erp_c_wrt_b, erp_b_wrt_a)
+v_c = reframe(erp_c_wrt_a, v_a)
+```
+
+which gives `SA[0.37890885798068275, 0.28686794099866375, 0.37730493081162575]`.
+
+For Rotations.jl:
+
+```
+q_b_to_c = QuatRotation(0.7269479084796793, 0.26328146006533937, -0.3194557972432347, 0.547884663730034)
+q_a_to_c = q_b_to_c * q_a_to_b
+v_c = q_a_to_c * v_a
+```
+
+which also gives `SA[0.37890885798068275, 0.28686794099866375, 0.37730493081162575]`.
+
+Note that `erp2dcm(erp_b_wrt_a)` and `RotMatrix(q_a_to_b)` also give the same matrices.
