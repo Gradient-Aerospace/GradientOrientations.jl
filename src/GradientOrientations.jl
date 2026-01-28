@@ -1,6 +1,4 @@
-"""
-TODO
-"""
+"A package for representing and operation on orientation-related types."
 module GradientOrientations
 
 using LinearAlgebra

@@ -1,7 +1,10 @@
 export AxisAngle, AA, AA_F64
 export aax, aay, aaz
 
-"TODO"
+"""
+Represents an orientation that is rotated a given angle (rad) about the given axis from a
+reference. The fields are `axis` and `angle`.
+"""
 @kwdef struct AxisAngle{T} <: AbstractOrientation{T}
     axis::SVector{3, T}
     angle::T
@@ -9,7 +12,12 @@ end
 const AA = AxisAngle
 const AA_F64 = AxisAngle{Float64}
 
-"TODO"
+"""
+Represents an orientation that is rotated a given angle (deg) about the given axis from a
+reference. The fields are `axis` and `angle`.
+
+This type can be converted to `AxisAngle` via the `deg2rad` function.
+"""
 @kwdef struct AxisAngleDeg{T} <: AbstractOrientation{T}
     axis::SVector{3, T}
     angle::T
@@ -28,13 +36,13 @@ Base.convert(::Type{AxisAngleDeg{T}}, aa::AxisAngle{T}) where {T} = rad2deg(aa)
 # Constructors #
 ################
 
-"TODO"
+"Constructs an AxisAngle orientation that is rotated by the given angle about the x axis."
 aax(θ::T) where {T} = AA{T}(SA[one(T), zero(T), zero(T)], θ)
 
-"TODO"
+"Constructs an AxisAngle orientation that is rotated by the given angle about the y axis."
 aay(θ::T) where {T} = AA{T}(SA[zero(T), one(T), zero(T)], θ)
 
-"TODO"
+"Constructs an AxisAngle orientation that is rotated by the given angle about the z axis."
 aaz(θ::T) where {T} = AA{T}(SA[zero(T), zero(T), one(T)], θ)
 
 Base.zero(aa::AA) = zero(typeof(aa))
@@ -72,7 +80,6 @@ distance(aa::AA) = abs(aa.angle)
 
 # This is also best handled with ERP interpolation.
 interpolate(a::AA, b::AA, f) = erp2aa(interpolate(aa2erp(a), aa2erp(b), f))
-# TODO: rate?
 
 #############
 # Iteration #

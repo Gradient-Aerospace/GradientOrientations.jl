@@ -92,7 +92,7 @@ The `⊗` operator (`\otimes`) can also be used for composition. That is, `a ⊗
 
 For `EulerRodriguesParameters`:
 
-* `rate(erp_b_wrt_a, omega_b_wrt_a_in_b)`: Returns the derivative over time of the given ERP using the given rotation rate. The return type will be an ERP type, though obviously it will not have a unit norm and will not, itself, represent an orientation. This is useful for numerical integration.
+* `rate(erp_b_wrt_a, omega_b_wrt_a_in_b)`: Returns the derivative over time of the given ERP using the given rotation rate. The return type will be an ERP type, though obviously it will not have a unit norm and will not, itself, represent an orientation. This is useful for numerical integration. While all types could conceivably implement this function, this package only implements it for `EulerRodriguesParameters` since it has the best numerical properties.
 * `other`: Returns an ERP that rotates "the other way around".
 * `smallest`: Returns an ERP that is equivalent to the input but is the "shortest way around".
 * `LinearAlgebra.normalize`: Returns a normalized version of an ERP -- useful after operations such as numerical integration.
@@ -149,7 +149,7 @@ RPY(; roll = 0., pitch = 0., yaw = 0.)
 
 ## Human Interface Types
 
-There are a couple of types whose only purpose (in this package) is human input and output. For example, there's a type called `RPYDeg` that lets the user specify the angles in degrees. That type should be converted to `RPY` either via `convert(RPY, my_rpy_deg)` or `rad2deg(my_rpy_deg)`. The `RPY` type is what should be used by the program.
+There are a couple of types whose only purpose (in this package) is human input and output. For example, there's a type called `RPYDeg` that lets the user specify the angles in degrees. That type should be converted to `RPY` either via `convert(RPY, my_rpy_deg)` or `deg2rad(my_rpy_deg)`. The `RPY` type is what should be used by the program.
 
 `AADeg` is the other "human interface" type.
 
