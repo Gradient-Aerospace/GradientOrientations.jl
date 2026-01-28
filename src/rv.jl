@@ -29,8 +29,8 @@ end
 ##############
 
 Base.inv(rv::RV) = RV(-rv.vector)
-compose(a::RV, b::RV) = compose(rv2erp(a), rv2erp(b)) # TODO: Be more direct.
-reframe(rv::RV, v) = reframe(rv2erp(rv), v) # TODO: Be more direct.
+compose(a::RV, b::RV) = compose(rv2erp(a), rv2erp(b))
+reframe(rv::RV, v) = reframe(rv2aa(rv), v)
 difference(a::RV, b::RV) = compose(a, inv(b))
 distance(rv::RV) = norm(rv)
 interpolate(a::RV, b::RV, f) = erp2rv(interpolate(rv2erp(a), rv2erp(b), f))

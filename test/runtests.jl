@@ -236,3 +236,6 @@ end
     end
 
 end
+
+include("test_dcm.jl")
+include("test_rv.jl")

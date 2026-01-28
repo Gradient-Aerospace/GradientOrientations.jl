@@ -50,12 +50,28 @@ end
 # Operations #
 ##############
 
-Base.inv(aa::AA) = typeof(aa)(-aa.axis, aa.angle)
-compose(a::AA, b::AA) = erp2aa(compose(aa2erp(a), aa2erp(b))) # TODO: Be more direct.
-reframe(aa::AA, v) = reframe(aa2erp(aa),  v) # TODO: Be more direct.
-difference(a::AA, b::AA) = erp2aa(difference(aa2erp(a), aa2erp(b))) # TODO: Be more direct.
+# We could swap the angle or axis. We choose the axis.
+Base.inv(aa::AA) = typeof(aa)(aa.axis, -aa.angle)
+
+# Going to ERPs is actually the best way to do this calculation.
+compose(a::AA, b::AA) = erp2aa(compose(aa2erp(a), aa2erp(b)))
+
+# We can reframe by going to DCM, but actually it's slightly faster without
+# going to DCM.
+function reframe(aa::AA{T}, v) where {T}
+    s, c = sincos(aa.angle)
+    r = aa.axis
+    return c .* v + ((one(T) - c) * (r ⋅ v)) .* r - s .* cross(r, v)
+end
+
+# Like composition, going to ERPs is the best way to do this.
+difference(a::AA, b::AA) = erp2aa(difference(aa2erp(a), aa2erp(b)))
+
+# Getting the distance is trivial.
 distance(aa::AA) = abs(aa.angle)
-interpolate(a::AA, b::AA, f) = erp2aa(interpolate(aa2erp(a), aa2erp(b), f)) # TODO: Be more direct.
+
+# This is also best handled with ERP interpolation.
+interpolate(a::AA, b::AA, f) = erp2aa(interpolate(aa2erp(a), aa2erp(b), f))
 # TODO: rate?
 
 #############

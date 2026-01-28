@@ -30,7 +30,7 @@ Base.convert(::Type{RV{T}}, aa::AA{T}) where {T} = aa2rv(aa) # Type is not speci
 
 "Returns the RollPitchYaw for the given AxisAngle."
 function aa2rpy(aa::AA)
-    return erp2rpy(aa2erp(aa)) # TODO: Be more direct.
+    return erp2rpy(aa2erp(aa))
 end
 Base.convert(::Type{RPY}, aa::AA) = aa2rpy(aa) # Type is not specified on the LHS.
 Base.convert(::Type{RPY{T}}, aa::AA{T}) where {T} = aa2rpy(aa) # Type is not specified on the LHS.
@@ -40,8 +40,23 @@ Base.convert(::Type{RPY{T}}, aa::AA{T}) where {T} = aa2rpy(aa) # Type is not spe
 #############
 
 "Returns the AxisAngle for the given DirectionCosineMatrix."
-function dcm2aa(dcm::DCM)
-    return erp2aa(dcm2erp(dcm)) # TODO: Be more direct.
+function dcm2aa(dcm::DCM{T}) where {T}
+    R = dcm.matrix
+    cos_angle = (tr(R) - 1) / 2
+    if cos_angle <= -one(T)
+        cos_angle = -one(T)
+    elseif cos_angle >= 1
+        return AA{T}(SA[one(T), zero(T), zero(T)], zero(T))
+    end
+    angle = acos(cos_angle)
+    axis = normalize(
+        SVector{3, T}(
+            R[2, 3] - R[3, 2],
+            R[3, 1] - R[1, 3],
+            R[1, 2] - R[2, 1],
+        ),
+    )
+    return AA{T}(axis, angle)
 end
 Base.convert(::Type{AA}, dcm::DCM) = dcm2aa(dcm) # Type is not specified on the LHS.
 Base.convert(::Type{AA{T}}, dcm::DCM{T}) where {T} = dcm2aa(dcm) # Type is not specified on the LHS.
@@ -96,7 +111,7 @@ Base.convert(::Type{ERP{T}}, dcm::DCM{T}) where {T} = dcm2erp(dcm) # Type is not
 
 "Returns the RotationVector for the given DirectionCosineMatrix."
 function dcm2rv(dcm::DCM)
-    return erp2rv(dcm2erp(dcm)) # TODO: Be more direct.
+    return aa2rv(dcm2aa(dcm))
 end
 Base.convert(::Type{RV}, dcm::DCM) = dcm2rv(dcm) # Type is not specified on the LHS.
 Base.convert(::Type{RV{T}}, dcm::DCM{T}) where {T} = dcm2rv(dcm) # Type is not specified on the LHS.
@@ -213,7 +228,7 @@ Base.convert(::Type{AA{T}}, rv::RV{T}) where {T} = rv2aa(rv) # Type is not speci
 
 "Returns the DirectionCosineMatrix for the given RotationVector."
 function rv2dcm(rv::RV)
-    return erp2dcm(rv2erp(rv)) # TODO: Be more direct.
+    return aa2dcm(rv2aa(rv))
 end
 Base.convert(::Type{DCM}, rv::RV) = rv2dcm(rv) # Type is not specified on the LHS.
 Base.convert(::Type{DCM{T}}, rv::RV{T}) where {T} = rv2dcm(rv) # Type is not specified on the LHS.
@@ -238,7 +253,7 @@ Base.convert(::Type{RPY{T}}, rv::RV{T}) where {T} = rv2rpy(rv) # Type is not spe
 
 "Returns the AxisAngle for the given RollPitchYaw."
 function rpy2aa(rpy::RPY)
-    return erp2aa(rpy2erp(rpy)) # TODO: Be more direct.
+    return erp2aa(rpy2erp(rpy))
 end
 Base.convert(::Type{AA}, rpy::RPY) = rpy2aa(rpy) # Type is not specified on the LHS.
 Base.convert(::Type{AA{T}}, rpy::RPY{T}) where {T} = rpy2aa(rpy) # Type is not specified on the LHS.
@@ -276,7 +291,7 @@ Base.convert(::Type{ERP{T}}, rpy::RPY{T}) where {T} = rpy2erp(rpy) # Type is not
 
 "Returns the RotationVector for the given RollPitchYaw."
 function rpy2rv(rpy::RPY)
-    return erp2rv(rpy2erp(rpy)) # TODO: Be more direct.
+    return erp2rv(rpy2erp(rpy))
 end
 Base.convert(::Type{RV}, rpy::RPY) = rpy2rv(rpy) # Type is not specified on the LHS.
 Base.convert(::Type{RV{T}}, rpy::RPY{T}) where {T} = rpy2rv(rpy) # Type is not specified on the LHS.
