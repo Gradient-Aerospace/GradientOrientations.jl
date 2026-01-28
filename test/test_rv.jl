@@ -3,6 +3,33 @@ using Test
 using StaticArrays
 using LinearAlgebra
 
+@testset "RV" begin
+
+    a = RV(SA[1., 2., 3.])
+    b = RV(SA[1., 0., -1.])
+    v = SA[5., 2., -4.]
+    f = 0.1
+
+    @test rv2erp(zero(RV_F64)) ≈ zero(ERP_F64)
+
+    @test reframe(a, v) ≈ reframe(rv2erp(a), v)
+    @test a ⊗ b ≈ erp2rv(rv2erp(a) ⊗ rv2erp(b))
+    @test difference(a, b) ≈ erp2rv(difference(rv2erp(a), rv2erp(b)))
+    @test distance(a, b) ≈ distance(rv2erp(a), rv2erp(b))
+    @test interpolate(a, b, f) ≈ erp2rv(interpolate(rv2erp(a), rv2erp(b), f))
+    @test inv(a) ≈ erp2rv(inv(rv2erp(a)))
+
+    rand(RV_F64) # Just test that we can do it.
+
+    # Test conversions to all other types.
+    tol = 1e-7
+    @test rv2aa(a) ≈ a atol = tol
+    @test rv2dcm(a) ≈ a atol = tol
+    @test rv2erp(a) ≈ a atol = tol
+    @test rv2rpy(a) ≈ a atol = tol
+
+end
+
 @testset "rv2dcm" begin
 
     # Test 1: Zero rotation vector should give identity matrix

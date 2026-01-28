@@ -269,4 +269,16 @@ end
 
 end
 
+@testset "ERP conversions" begin
+
+    a = normalize(ERP(1., 2., 3., 4.))
+
+    tol = 1e-7
+    @test erp2aa(a) ≈ a atol = tol
+    @test erp2dcm(a) ≈ a atol = tol
+    @test erp2rpy(a) ≈ a atol = tol
+    @test erp2rv(a) ≈ a atol = tol
+
+end
+
 include("test_erp_interp.jl")

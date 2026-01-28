@@ -3,6 +3,36 @@ using Test
 using StaticArrays
 using LinearAlgebra
 
+@testset "DCM" begin
+
+    a = rv2dcm(RV(SA[1., 2., 3.]))
+    b = rv2dcm(RV(SA[1., 0., -1.]))
+    v = SA[5., 2., -4.]
+    f = 0.1
+
+    @test dcm2erp(zero(DCM_F64)) ≈ zero(ERP_F64)
+
+    # Triggy conversions have much worse tolerances than the non-trig types.
+    dcm_tol = 1e-7
+
+    @test reframe(a, v) ≈ reframe(dcm2erp(a), v)
+    @test a ⊗ b ≈ erp2dcm(dcm2erp(a) ⊗ dcm2erp(b)) atol = dcm_tol
+    @test difference(a, b) ≈ erp2dcm(difference(dcm2erp(a), dcm2erp(b)))
+    @test distance(a, b) ≈ distance(dcm2erp(a), dcm2erp(b))
+    @test interpolate(a, b, f) ≈ erp2dcm(interpolate(dcm2erp(a), dcm2erp(b), f)) atol = dcm_tol
+    @test inv(a) ≈ erp2dcm(inv(dcm2erp(a))) atol = dcm_tol
+
+    rand(DCM_F64) # Just test that we can do it.
+
+    # Test conversions to all other types.
+    tol = 1e-7
+    @test dcm2aa(a) ≈ a atol = tol
+    @test dcm2erp(a) ≈ a atol = tol
+    @test dcm2rpy(a) ≈ a atol = tol
+    @test dcm2rv(a) ≈ a atol = tol
+
+end
+
 @testset "dcm2aa" begin
 
     # Test 1: Identity matrix should give zero angle
