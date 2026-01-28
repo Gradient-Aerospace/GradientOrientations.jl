@@ -1,6 +1,9 @@
 export RotationVector, RV, RV_F64
 
-"TODO"
+"""
+Represents an orientation using a rotation vector -- essentially the angle of rotation times
+the axis of rotation between the two frames. It has a single field, `vector`.
+"""
 @kwdef struct RotationVector{T} <: AbstractOrientation{T}
     vector::SVector{3, T}
 end
@@ -29,12 +32,11 @@ end
 ##############
 
 Base.inv(rv::RV) = RV(-rv.vector)
-compose(a::RV, b::RV) = compose(rv2erp(a), rv2erp(b)) # TODO: Be more direct.
-reframe(rv::RV, v) = reframe(rv2erp(rv), v) # TODO: Be more direct.
+compose(a::RV, b::RV) = compose(rv2erp(a), rv2erp(b))
+reframe(rv::RV, v) = reframe(rv2aa(rv), v)
 difference(a::RV, b::RV) = compose(a, inv(b))
 distance(rv::RV) = norm(rv)
 interpolate(a::RV, b::RV, f) = erp2rv(interpolate(rv2erp(a), rv2erp(b), f))
-# TODO: rate?
 
 #############
 # Iteration #

@@ -2,7 +2,11 @@ export EulerRodriguesParameters, ERP, ERP_F64
 export erpx, erpy, erpz
 
 """
-TODO
+Represents an orientation using Euler-Rodrigues Parameters, as described by Shuster in "A
+Survery of Attitude Representations".
+
+This is the same type as a quaternion or rotation where the scalar is last. It follows the
+JPL convention for composition rules and conversion to other types.
 """
 @kwdef struct EulerRodriguesParameters{T} <: AbstractOrientation{T}
     x::T

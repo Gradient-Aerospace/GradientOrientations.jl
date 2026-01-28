@@ -2,7 +2,7 @@ export DirectionCosineMatrix, DCM, DCM_F64
 export Rx, Ry, Rz
 
 """
-TODO
+Represents an orientation as a direction cosine matrix, with a single field called `matrix`.
 """
 @kwdef struct DirectionCosineMatrix{T} <: AbstractOrientation{T} # Not an AbstractMatrix!
     matrix::SMatrix{3, 3, T, 9}
@@ -112,7 +112,6 @@ reframe(dcm::DCM, v) = dcm.matrix * v
 difference(a::DCM, b::DCM) = DCM(a.matrix * b.matrix')
 distance(dcm::DCM{T}) where {T} = acos(clamp((tr(dcm.matrix) - 1) / 2, -one(T), one(T)))
 interpolate(a::DCM, b::DCM, f) = erp2dcm(interpolate(dcm2erp(a), dcm2erp(b), f))
-# TODO: rate?
 
 ###################
 # Matrix Behavior #

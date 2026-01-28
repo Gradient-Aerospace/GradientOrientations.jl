@@ -1,5 +1,11 @@
 export RollPitchYaw, RPY, RPY_F64, RPYDeg, RPYDeg_F64
 
+"""
+Represents an orientation as a roll, pitch, and yaw (rad) from a reference. Yaw is the first
+rotation, followed by pitch, followed by roll. That is, this describes a frame oriented
+`roll` around the x axis of a frame that's oriented `pitch` around the y axis of a frame
+that's oriented `yaw` around the z axis of the reference frame.
+"""
 @kwdef struct RollPitchYaw{T} <: AbstractOrientation{T}
     roll::T
     pitch::T
@@ -8,6 +14,14 @@ end
 const RPY = RollPitchYaw
 const RPY_F64 = RollPitchYaw{Float64}
 
+"""
+Represents an orientation as a roll, pitch, and yaw (deg) from a reference. Yaw is the first
+rotation, followed by pitch, followed by roll. That is, this describes a frame oriented
+`roll` around the x axis of a frame that's oriented `pitch` around the y axis of a frame
+that's oriented `yaw` around the z axis of the reference frame.
+
+This type can be converted to RollPitchYaw via `deg2rad`.
+"""
 @kwdef struct RollPitchYawDeg{T} <: AbstractOrientation{T}
     roll::T
     pitch::T

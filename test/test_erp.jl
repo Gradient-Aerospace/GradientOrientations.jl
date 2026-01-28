@@ -118,9 +118,10 @@ end
 
 @testset "rate norm correction" begin
 
-    # Define a function to get the magnitude of the error between two sets of EPs.
+    # Define a function to get the magnitude of the error between two sets of EPs. Unlike
+    # `distance`, we do this with the vector part.
     angle_from_vector(ep) = 2 * asin(norm([ep.x, ep.y, ep.z]))
-    eperr(ep1, erp2) = angle_from_vector(compose(ep1, inv(erp2))) # TODO: Replace with distance?
+    eperr(ep1, erp2) = angle_from_vector(compose(ep1, inv(erp2)))
 
     # Let's set up a little sim where we have a set of EulerParameters. One will be the
     # truth values, propagated numerical integration (Euler method). Another will start at a
@@ -230,7 +231,7 @@ end
     a = ERP(1., 2., 3., -4.)
 
     b1 = a
-    b2 = other(a) # TODO: "other" is meaningless for a non-normalized ERP.
+    b2 = other(a)
     b3 = normalize(a)
     b4 = normalize(other(a))
 
@@ -265,6 +266,18 @@ end
     # Other way around
     @test distance(erpx(2π + θ), zero(ERP{Float64})) ≈ θ
     @test distance(other(erpy(θ)), zero(ERP{Float64})) ≈ θ
+
+end
+
+@testset "ERP conversions" begin
+
+    a = normalize(ERP(1., 2., 3., 4.))
+
+    tol = 1e-7
+    @test erp2aa(a) ≈ a atol = tol
+    @test erp2dcm(a) ≈ a atol = tol
+    @test erp2rpy(a) ≈ a atol = tol
+    @test erp2rv(a) ≈ a atol = tol
 
 end
 
