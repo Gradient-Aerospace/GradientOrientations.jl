@@ -326,6 +326,11 @@ function Base.:+(a::T, b::T) where {T <: EulerRodriguesParameters}
     return T(a.x + b.x, a.y + b.y, a.z + b.z, a.s + b.s)
 end
 
+"Subtracts the elements of second EulerRodriguesParameters from the first."
+function Base.:-(a::T, b::T) where {T <: EulerRodriguesParameters}
+    return T(a.x - b.x, a.y - b.y, a.z - b.z, a.s - b.s)
+end
+
 "Multiplies the elements of a EulerRodriguesParameters by a scalar (first argument)."
 function Base.:*(s::ST, a::T) where {ST <: Number, T <: EulerRodriguesParameters}
     return T(s * a.x, s * a.y, s * a.z, s * a.s)
@@ -335,6 +340,7 @@ end
 function Base.:*(a::T, s::ST) where {T <: EulerRodriguesParameters, ST <: Number}
     return T(a.x * s, a.y * s, a.z * s, a.s * s)
 end
+
 
 #################
 # Miscellaneous #
