@@ -1,4 +1,4 @@
-export AxisAngle, AA, AA_F64
+export AxisAngle, AA, AA_F64, AADeg, AADeg_F64
 export aax, aay, aaz
 
 """
