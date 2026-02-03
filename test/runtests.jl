@@ -110,3 +110,15 @@ include("test_rpy.jl")
     end
 
 end
+
+@testset "specialty conversions" begin
+
+    rpy = RPYDeg_F64(0., 0., 90.)
+    erp = convert(ERP, rpy)
+    @test erp ≈ erpz(π/2)
+
+    aa = AADeg_F64(SA[1., 0., 0.], 90)
+    erp = convert(ERP, aa)
+    @test erp ≈ erpx(π/2)
+
+end

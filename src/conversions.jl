@@ -20,6 +20,8 @@ function aa2erp(aa::AA{T}) where {T}
 end
 Base.convert(::Type{ERP}, aa::AA) = aa2erp(aa) # Type is not specified on the LHS.
 Base.convert(::Type{ERP{T}}, aa::AA{T}) where {T} = aa2erp(aa) # Type is not specified on the LHS.
+Base.convert(::Type{ERP}, aa_deg::AADeg) = aa2erp(deg2rad(aa_deg)) # Type is not specified on the LHS.
+Base.convert(::Type{ERP{T}}, aa_deg::AADeg{T}) where {T} = aa2erp(deg2rad(aa_deg))
 
 "Returns the RotationVector for the given AxisAngle."
 function aa2rv(aa::AA{T}) where {T}
@@ -287,7 +289,9 @@ function rpy2erp(rpy::RPY)
     )
 end
 Base.convert(::Type{ERP}, rpy::RPY) = rpy2erp(rpy) # Type is not specified on the LHS.
-Base.convert(::Type{ERP{T}}, rpy::RPY{T}) where {T} = rpy2erp(rpy) # Type is not specified on the LHS.
+Base.convert(::Type{ERP{T}}, rpy::RPY{T}) where {T} = rpy2erp(rpy)
+Base.convert(::Type{ERP}, rpy_deg::RPYDeg) = rpy2erp(deg2rad(rpy_deg)) # Type is not specified on the LHS.
+Base.convert(::Type{ERP{T}}, rpy_deg::RPYDeg{T}) where {T} = rpy2erp(deg2rad(rpy_deg))
 
 "Returns the RotationVector for the given RollPitchYaw."
 function rpy2rv(rpy::RPY)

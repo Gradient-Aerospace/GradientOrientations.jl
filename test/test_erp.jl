@@ -174,6 +174,7 @@ end
     x = [1., 2., 3., 4.]
     y = [5., 6., 7., 8.]
     @test ERP(x + y) == ERP(x) + ERP(y)
+    @test ERP(y) - ERP(x) == ERP(y .- x)
     @test ERP(2x) == 2. * ERP(x)
     @test ERP(2x) == ERP(x) * 2.
     @test all((x...,) .== convert(NTuple{4,Float64}, ERP(x)))
