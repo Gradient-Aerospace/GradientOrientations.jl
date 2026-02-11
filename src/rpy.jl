@@ -40,7 +40,7 @@ Base.deg2rad(rpy_deg::RPYDeg{T}) where {T} = RPY{T}(
     deg2rad(rpy_deg.yaw),
 )
 
-Base.rad2deg(rpy::RPYDeg{T}) where {T} = RPYDeg{T}(
+Base.rad2deg(rpy::RPY{T}) where {T} = RPYDeg{T}(
     rad2deg(rpy.roll),
     rad2deg(rpy.pitch),
     rad2deg(rpy.yaw),
