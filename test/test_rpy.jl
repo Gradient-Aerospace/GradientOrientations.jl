@@ -27,4 +27,15 @@
     @test rpy2erp(a) ≈ a atol = tol
     @test rpy2rv(a) ≈ a atol = tol
 
+    # Test conversion to/from degrees.
+    deg = [10., 20., -30.]
+    rpy_deg = convert(RPYDeg, RPY(deg2rad.(deg)...))
+    @test rpy_deg.roll ≈ deg[1]
+    @test rpy_deg.pitch ≈ deg[2]
+    @test rpy_deg.yaw ≈ deg[3]
+    rpy = convert(RPY, rpy_deg)
+    @test rpy.roll ≈ deg2rad(deg[1])
+    @test rpy.pitch ≈ deg2rad(deg[2])
+    @test rpy.yaw ≈ deg2rad(deg[3])
+
 end
