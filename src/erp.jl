@@ -290,7 +290,7 @@ Base.firstindex(erp::EulerRodriguesParameters) = 1
 Base.lastindex(erp::EulerRodriguesParameters) = 4
 
 # Let's tell the user they can't do this.
-function Base.setindex!(erp::EulerRodriguesParameters, k, value)
+function Base.setindex!(erp::EulerRodriguesParameters, value, k)
     error("EulerRodriguesParameters are immutable and cannot support setindex!.")
 end
 

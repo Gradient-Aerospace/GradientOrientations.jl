@@ -107,7 +107,7 @@ Base.firstindex(aa::AA) = 1
 Base.lastindex(aa::AA) = 2
 
 # Let's tell the user they can't do this.
-function Base.setindex!(aa::AA, k, value)
+function Base.setindex!(aa::AA, value, k)
     error("AxisAngle is immutable and cannot support setindex!.")
 end
 
