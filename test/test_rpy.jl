@@ -27,6 +27,15 @@
     @test rpy2erp(a) ≈ a atol = tol
     @test rpy2rv(a) ≈ a atol = tol
 
+    # Conversion to specific types.
+    rpy = RPY(0.1, 0.2, 0.3)
+    dcm = rpy2dcm(rpy)
+    dcm_expected = Rx(rpy.roll) * Ry(rpy.pitch) * Rz(rpy.yaw)
+    @test all(dcm.matrix .≈ dcm_expected.matrix)
+    erp = rpy2erp(rpy)
+    erp_expected = compose(erpx(rpy.roll), erpy(rpy.pitch), erpz(rpy.yaw))
+    @test all(smallest(erp) .≈ smallest(erp_expected))
+
     # Test conversion to/from degrees.
     deg = [10., 20., -30.]
     rpy_deg = convert(RPYDeg, RPY(deg2rad.(deg)...))

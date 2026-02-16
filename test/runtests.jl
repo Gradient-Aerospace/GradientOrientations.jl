@@ -7,7 +7,7 @@ using StaticArrays
 import GradientOrientations: crs3
 
 # By default, this is pretty tight.
-Base.isapprox(a::ERP, b::ERP; atol = eps(4π)) = distance(a, b) <= atol
+Base.isapprox(a::ERP, b::ERP; atol = eps(4π)) = distance(normalize(a), normalize(b)) <= atol
 
 # Obviously, by relying on ERP conversion to test all orientations, we should do a good job
 # of making sure the ERP stuff is right on its own (separate from these tests).
