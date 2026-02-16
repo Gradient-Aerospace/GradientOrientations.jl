@@ -269,7 +269,7 @@ function rpy2dcm(rpy::RPY)
         @SMatrix [ # Zipfel 75, eq. 3.14
             cy * cp                    sy * cp                      -sp;
             cy * sp * sr - sy * cr     sy * sp * sr + cy * cr       cp * sr;
-            cy * sp * cr + sy * sr     sy * sp * cr - cy * sr       cp * sr;
+            cy * sp * cr + sy * sr     sy * sp * cr - cy * sr       cp * cr;
         ]
     )
 end
