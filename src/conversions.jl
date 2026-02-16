@@ -9,8 +9,8 @@ function aa2dcm(aa::AA{T}) where {T}
     R = diagm(SVector{3, T}(c, c, c)) + (one(T) - c) .* (r * r') - s .* crs3(r)
     return DCM{T}(R)
 end
-Base.convert(::Type{DCM}, aa::AA) = aa2dcm(erp) # Type is not specified on the LHS.
-Base.convert(::Type{DCM{T}}, aa::AA{T}) where {T} = aa2dcm(erp) # Type is not specified on the LHS.
+Base.convert(::Type{DCM}, aa::AA) = aa2dcm(aa) # Type is not specified on the LHS.
+Base.convert(::Type{DCM{T}}, aa::AA{T}) where {T} = aa2dcm(aa) # Type is not specified on the LHS.
 
 "Returns the EulerRodriguesParameters for the given AxisAngle."
 function aa2erp(aa::AA{T}) where {T}
