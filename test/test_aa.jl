@@ -23,4 +23,14 @@
     @test aa2rpy(a) ≈ a atol = tol
     @test aa2rv(a) ≈ a atol = tol
 
+    @test distance(AA(SA[1., 0., 0.], 3.1)) ≈ 3.1
+    @test distance(AA(SA[1., 0., 0.], 3.2)) ≈ 2π - 3.2
+
+    c = smallest(AA(SA[1., 0., 0.], 3.1))
+    @test c.angle == 3.1
+    @test c.axis == SA[1., 0., 0.]
+    c = smallest(AA(SA[1., 0., 0.], 3π/2))
+    @test c.angle ≈ π/2
+    @test c.axis == SA[-1., 0., 0.]
+
 end

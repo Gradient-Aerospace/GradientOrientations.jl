@@ -8,19 +8,22 @@ using StaticArrays
 """
 All subtypes of AbstractOrientation are expected to support:
 
-* reframe
-* compose
-* difference
-* distance
-* interpolate
-* other
-* smallest
-
+* reframe(orientation, vector)
+* compose(a, b)
+* difference(a, b)
+* distance(orientation)
+* distance(a, b)
+* interpolate(a, b, fraction)
 * Base.zero
 * Base.inv
 * Random.rand
 
 To enable a type to support numerical integration, implement `rates` for the type.
+
+Where it makes sense, types may implement:
+
+* other(orientation)
+* smallest(orientation)
 
 It's helpful to write conversions for each abstract type, especially to and from
 EulerRodriguesParameters. That provides a way to convert to all other types. Where more
@@ -57,26 +60,94 @@ include("conversions.jl")
 
 # Implement some fallback methods for AbstractOrientation that just convert to ERP, do the
 # operation, and then convert back.
+
+"""
+    reframe(B_wrt_A::AbstractOrientation, v_A)
+
+If `B_wrt_A` is the orientation of frame B wrt frame A and `v_A` is a vector expressed in
+frame A, this returns the vector expressed in frame B. (Shuster eq. 158)
+"""
 function reframe(a::AbstractOrientation, v)
     return reframe(convert(ERP, a), v)
 end
+
+"""
+Composes two orientations s.t. if the first argument is the orientation of frame C wrt frame
+B, and the second is the orientation of B wrt A, the result is the orientation of frame C
+wrt frame A. (Shuster eq. 173)
+"""
 function compose(a::T, b::T) where {T <: AbstractOrientation}
     return convert(T, compose(convert(ERP, a), convert(ERP, b)))
 end
+
+"""
+If `a` is the orientation of frame A wrt C and `b` is the orientation of frame B wrt C, then
+this function returns the orientation of A wrt B.
+"""
 function difference(a::T, b::T) where {T <: AbstractOrientation}
     return convert(T, difference(convert(ERP, a), convert(ERP, b)))
 end
+
+"""
+Returns the angle that the given orientation is rotated wrt its reference (shortest way
+around).
+"""
+function distance(a::AbstractOrientation{T}) where {T}
+    return distance(convert(ERP{T}, a))
+end
+
+"""
+If `a` is the orientation of frame A wrt C and `b` is the orientation of frame
+B wrt C, then this function returns the angle by which A is rotated from C (shortest way
+around).
+"""
 function distance(a::T, b::T) where {T <: AbstractOrientation}
     return distance(convert(ERP, a), convert(ERP, b))
 end
-function interpolate(a::T, b::T, f) where {T <: AbstractOrientation}
-    return convert(T, interpolate(convert(ERP, a), convert(ERP, b), f))
+
+"""
+    interpolate(a, b, t; shortest_path = true)
+
+Spherical linear interpolation between two orientations.
+
+The parameter `f` can range from 0 to 1 to specify where along the sphere to interpolate.
+When f = 0, the result is `a` and when f = 1, the result is `b`.
+
+Setting `shortest_path` to false will allow the interpolation to take the "long way around".
+
+References
+- https://en.wikipedia.org/wiki/Slerp
+- https://blog.magnum.graphics/backstage/the-unnecessarily-short-ways-to-do-a-quaternion-slerp/
+"""
+function interpolate(a::T, b::T, f; kwargs...) where {T <: AbstractOrientation}
+    return convert(T, interpolate(convert(ERP, a), convert(ERP, b), f; kwargs...))
 end
+
+"Returns the element type used by this orientation."
 Base.eltype(::AbstractOrientation{T}) where {T} = T
+
+"""
+Returns an orientation that is not rotated from its reference, using the same type as the input.
+"""
 Base.zero(x::AbstractOrientation) = zero(typeof(x))
+
+"""
+Returns an orientation that is not rotated from its reference, using the given type.
+"""
 Base.zero(type::Type{<:AbstractOrientation}) = zero(ERP{eltype(type)})
+
+"""
+Inverts the orientation such that if the input is the orientation of B wrt A, this returns
+the orientation of A wrt B.
+"""
 Base.inv(x::AbstractOrientation) = convert(typeof(x), inv(convert(ERP, x)))
-Random.rand(x::AbstractOrientation) = convert(typeof(x), rand(convert(ERP, x)))
+
+"""
+Returns a uniform random orientation with the given type.
+"""
+function Random.rand(rng::AbstractRNG, ::Random.SamplerType{OT}) where {OT <: AbstractOrientation{T}} where {T}
+    return convert(OT, rand(rng, ERP{T}))
+end
 
 "Composition operator, with the same interface as `compose`."
 ⊗(a, b) = compose(a, b)
