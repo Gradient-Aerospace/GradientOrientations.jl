@@ -32,10 +32,10 @@ end
 ##############
 
 Base.inv(rv::RV) = RV(-rv.vector)
-compose(a::RV, b::RV) = compose(rv2erp(a), rv2erp(b))
+compose(a::RV, b::RV) = erp2rv(compose(rv2erp(a), rv2erp(b)))
 reframe(rv::RV, v) = reframe(rv2aa(rv), v)
-difference(a::RV, b::RV) = compose(a, inv(b))
-distance(rv::RV) = norm(rv)
+difference(a::RV, b::RV) = erp2rv(difference(rv2erp(a), rv2erp(b)))
+distance(rv::RV) = norm(rv.vector)
 interpolate(a::RV, b::RV, f) = erp2rv(interpolate(rv2erp(a), rv2erp(b), f))
 
 #############
