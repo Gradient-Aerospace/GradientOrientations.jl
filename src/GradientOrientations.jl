@@ -76,7 +76,7 @@ Base.eltype(::AbstractOrientation{T}) where {T} = T
 Base.zero(x::AbstractOrientation) = zero(typeof(x))
 Base.zero(type::Type{<:AbstractOrientation}) = zero(ERP{eltype(type)})
 Base.inv(x::AbstractOrientation) = convert(typeof(x), inv(convert(ERP, x)))
-Random.rand(x::AbstractOrientation) = convert(typeof(x), rand(convert(ERP, x)))
+Random.rand(x::AbstractOrientation) = convert(typeof(x), rand(typeof(convert(ERP, x))))
 
 "Composition operator, with the same interface as `compose`."
 ⊗(a, b) = compose(a, b)
