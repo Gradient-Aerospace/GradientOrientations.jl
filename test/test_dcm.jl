@@ -31,6 +31,13 @@ using LinearAlgebra
     @test dcm2rpy(a) ≈ a atol = tol
     @test dcm2rv(a) ≈ a atol = tol
 
+    dcm = Rx(0.1)
+    @test distance(dcm) ≈ 0.1
+    dcm = Ry(-0.2)
+    @test distance(dcm) ≈ 0.2
+    dcm = Rz(3π/2)
+    @test distance(dcm) ≈ π/2
+
 end
 
 @testset "dcm2aa" begin

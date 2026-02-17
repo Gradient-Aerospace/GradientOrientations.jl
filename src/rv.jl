@@ -20,11 +20,6 @@ Base.zero(rv::RV{T}) where {T} = zero(typeof(rv))
 Base.zero(::Type{RV}) = zero(RV_F64)
 Base.zero(::Type{RV{T}}) where {T} = RV(zero(SVector{3, T}))
 
-"Constructs a random RotationVector following a uniform distribution on SO(3)."
-function Random.rand(rng::AbstractRNG, ::Random.SamplerType{RV{T}}) where {T}
-    return erp2rv(rand(rng, ERP{T}))
-end
-
 # TODO: We could do the deg2rad/rad2deg thing here too.
 
 ##############
@@ -35,7 +30,17 @@ Base.inv(rv::RV) = RV(-rv.vector)
 compose(a::RV, b::RV) = erp2rv(compose(rv2erp(a), rv2erp(b)))
 reframe(rv::RV, v) = reframe(rv2aa(rv), v)
 difference(a::RV, b::RV) = erp2rv(difference(rv2erp(a), rv2erp(b)))
-distance(rv::RV) = norm(rv)
+
+function distance(rv::RV)
+    angle = norm(rv.vector)
+    angle = mod(angle, 2π)
+    if angle > π
+        return 2π - angle
+    else
+        return angle
+    end
+end
+
 interpolate(a::RV, b::RV, f) = erp2rv(interpolate(rv2erp(a), rv2erp(b), f))
 
 #############

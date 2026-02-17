@@ -85,11 +85,6 @@ Base.zero(dcm::DCM{T}) where {T} = zero(typeof(dcm))
 Base.zero(::Type{DCM}) = zero(DCM_F64)
 Base.zero(::Type{DCM{T}}) where {T} = DCM(one(SMatrix{3, 3, T, 9})) # <- A bit ironic...
 
-"Constructs a random DirectionCosineMatrix orientation following a uniform distribution on SO(3)."
-function Random.rand(rng::AbstractRNG, ::Random.SamplerType{DCM{T}}) where {T}
-    return erp2dcm(rand(rng, ERP{T}))
-end
-
 "Converts a matrix to a DirectionCosineMatrix."
 function Base.convert(type::Type{<:DCM}, m::AbstractMatrix)
     @assert size(m) == (3,3) "Cannot convert a $(size(m)) matrix to a DirectionCosineMatrix."

@@ -179,6 +179,14 @@ function distance(a::EulerRodriguesParameters, b::EulerRodriguesParameters)
 end
 
 """
+Returns the "distance" (non-negative angle, the "short way around") of the ERP wrt the
+reference orientation.
+"""
+function distance(a::EulerRodriguesParameters{T}) where {T}
+    return 2 * acos(clamp(abs(a.s), zero(T), one(T)))
+end
+
+"""
     rate(erp::EulerRodriguesParameters, ω; k = 1/2)
 
 Returns the rate of change of the ERP of B wrt A (`erp`) given the rotation rate of B
@@ -211,8 +219,8 @@ end
 
 Spherical linear interpolation between two EulerRodriguesParameters.
 
-The parameter `f` can range from 0 to 1 to specify where along the sphere to interpolate. When f = 0, the result is
-`eta_start` and when f = 1, the result is `eta_end`.
+The parameter `f` can range from 0 to 1 to specify where along the sphere to interpolate.
+When f = 0, the result is `a` and when f = 1, the result is `b`.
 
 Setting `shortest_path` to false will allow the interpolation to take the "long way around".
 

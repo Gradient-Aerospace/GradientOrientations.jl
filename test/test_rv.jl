@@ -28,6 +28,16 @@ using LinearAlgebra
     @test rv2erp(a) ≈ a atol = tol
     @test rv2rpy(a) ≈ a atol = tol
 
+    vector = SA[0.1, 0.2, 0.3]
+    @test distance(RV(vector)) ≈ norm(vector)
+    @test distance(RV(-vector)) ≈ norm(vector)
+    vector = π/4 * normalize(SA[0.1, 0.2, 0.3])
+    @test distance(RV(vector)) ≈ π/4
+    @test distance(RV(-vector)) ≈ π/4
+    vector = (π + 0.1) * normalize(SA[0.1, 0.2, 0.3])
+    @test distance(RV(vector)) ≈ 2π - (π + 0.1)
+    @test distance(RV(-vector)) ≈ 2π - (π + 0.1)
+
 end
 
 @testset "rv2dcm" begin

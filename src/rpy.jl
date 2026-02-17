@@ -57,11 +57,6 @@ Base.zero(rv::RPY{T}) where {T} = zero(typeof(rv))
 Base.zero(::Type{RPY}) = zero(RPY_F64)
 Base.zero(::Type{RPY{T}}) where {T} = RPY{T}(zero(T), zero(T), zero(T))
 
-"Constructs a random RollPitchYaw following a uniform distribution on SO(3)."
-function Random.rand(rng::AbstractRNG, ::Random.SamplerType{RPY{T}}) where {T}
-    return erp2rpy(rand(rng, ERP{T}))
-end
-
 ##############
 # Operations #
 ##############

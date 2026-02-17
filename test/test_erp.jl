@@ -209,6 +209,8 @@ end
     @test dict["z"] == 3.
     @test dict["s"] == 4.
 
+    rand(ERP_F64)
+
 end
 
 @testset "erpx, erpy, erpz" begin
@@ -260,6 +262,17 @@ end
 @testset "distance" begin
 
     θ = deg2rad(15.)
+
+    # One-argument versions:
+
+    @test distance(erpx(θ)) ≈ θ
+    @test distance(erpy(θ)) ≈ θ
+
+    # Other way around
+    @test distance(erpx(2π + θ)) ≈ θ
+    @test distance(other(erpy(θ))) ≈ θ
+
+    # Two-argument versions:
 
     @test distance(erpx(θ), zero(ERP{Float64})) ≈ θ
     @test distance(erpy(θ), zero(ERP{Float64})) ≈ θ

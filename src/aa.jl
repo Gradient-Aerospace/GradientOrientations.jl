@@ -49,11 +49,6 @@ Base.zero(aa::AA) = zero(typeof(aa))
 Base.zero(::Type{<:AA}) = zero(AA_F64)
 Base.zero(::Type{AA{T}}) where {T} = AA{T}(SA[one(T), zero(T), zero(T)], zero(T))
 
-"Constructs a random AxisAngle orientation following a uniform distribution on SO(3)."
-function Random.rand(rng::AbstractRNG, ::Random.SamplerType{AA{T}}) where {T}
-    return erp2aa(rand(rng, ERP{T}))
-end
-
 ##############
 # Operations #
 ##############
@@ -76,7 +71,25 @@ end
 difference(a::AA, b::AA) = erp2aa(difference(aa2erp(a), aa2erp(b)))
 
 # Getting the distance is trivial.
-distance(aa::AA) = abs(aa.angle)
+function distance(aa::AA)
+    angle = mod(aa.angle, 2π) # Now angle is in [0, 2pi).
+    if angle > π
+        return 2π - angle
+    else
+        return angle
+    end
+end
+
+function smallest(aa::AA)
+    angle = mod(aa.angle, 2π) # Now angle is in [0, 2pi).
+    if angle > π
+        return AA(-aa.axis, 2π - angle)
+    else
+        return AA(aa.axis, angle)
+    end
+end
+
+other(aa::AA) = AA(-aa.axis, -aa.angle)
 
 # This is also best handled with ERP interpolation.
 interpolate(a::AA, b::AA, f) = erp2aa(interpolate(aa2erp(a), aa2erp(b), f))
