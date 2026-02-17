@@ -18,7 +18,7 @@ All subtypes of AbstractOrientation are expected to support:
 * Base.inv
 * Random.rand
 
-To enable a type to support numerical integration, implement `rates` for the type.
+To enable a type to support numerical integration, implement `rate` for the type.
 
 Where it makes sense, types may implement:
 

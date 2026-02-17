@@ -119,7 +119,7 @@ interpolate(a::DCM, b::DCM, f) = erp2dcm(interpolate(dcm2erp(a), dcm2erp(b), f))
 @inline Base.getindex(dcm::DCM, args...) = getindex(dcm.matrix, args...)
 @inline LinearAlgebra.tr(dcm::DCM) = tr(dcm.matrix)
 # Note: We don't support broadcasting or scalar multiplication because that probably means
-# the resulting type isn't a DCM any more. If we supported `rates`, that would make sense
+# the resulting type isn't a DCM any more. If we supported `rate`, that would make sense
 # though.
 
 #################

@@ -215,7 +215,7 @@ function rate(erp::EulerRodriguesParameters{T}, ω, k = one(T)/2) where {T}
 end
 
 """
-    interpolate(a, b, t; shortest_path = true)
+    interpolate(a, b, f; shortest_path = true)
 
 Spherical linear interpolation between two EulerRodriguesParameters.
 
