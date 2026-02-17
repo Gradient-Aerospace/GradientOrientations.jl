@@ -1,4 +1,4 @@
-"A package for representing and operation on orientation-related types."
+"A package for representing and operating on orientation-related types."
 module GradientOrientations
 
 using LinearAlgebra
