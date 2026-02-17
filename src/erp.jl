@@ -3,7 +3,7 @@ export erpx, erpy, erpz
 
 """
 Represents an orientation using Euler-Rodrigues Parameters, as described by Shuster in "A
-Survery of Attitude Representations".
+Survey of Attitude Representations".
 
 This is the same type as a quaternion or rotation where the scalar is last. It follows the
 JPL convention for composition rules and conversion to other types.
@@ -215,7 +215,7 @@ function rate(erp::EulerRodriguesParameters{T}, ω, k = one(T)/2) where {T}
 end
 
 """
-    interpolate(a, b, t; shortest_path = true)
+    interpolate(a, b, f; shortest_path = true)
 
 Spherical linear interpolation between two EulerRodriguesParameters.
 
