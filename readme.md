@@ -11,6 +11,7 @@ The available orientation types are:
 * `EulerRodriguesParameters` (aka `ERP`)
 * `RotationVector` (aka `RV`)
 * `RollPitchYaw` (aka `RPY`)
+* `RollPitchYawZXY` (aka `RPYZXY`)
 
 ## Basic Example
 
@@ -54,6 +55,7 @@ dcm_b_wrt_a = convert(DCM, aa_b_wrt_a)
 erp_b_wrt_a = convert(ERP, aa_b_wrt_a)
 rv_b_wrt_a  = convert(RV,  aa_b_wrt_a)
 rpy_b_wrt_a = convert(RPY, aa_b_wrt_a)
+rpy_zxy_b_wrt_a = convert(RPYZXY, aa_b_wrt_a)
 ```
 
 Those `convert` methods actually call the underlying functions for conversion.
@@ -63,6 +65,7 @@ dcm_b_wrt_a = aa2dcm(aa_b_wrt_a)
 erp_b_wrt_a = aa2erp(aa_b_wrt_a)
 rv_b_wrt_a = aa2rv(aa_b_wrt_a)
 rpy_b_wrt_a = aa2rpy(aa_b_wrt_a)
+rpy_zxy_b_wrt_a = aa2rpyZXY(aa_b_wrt_a)
 ```
 
 Similar functions with obvious names exist to convert between all available types.
@@ -74,7 +77,15 @@ Note that the RollPitchYaw type implies that the intended frame is oriented `rol
 ```julia
 rpy_b_wrt_a = RPY(0.1, 0.2, 0.3)
 erp_b_wrt_a = compose(erpx(0.1), erpy(0.2), erpz(0.3))
-rpy_b_wrt_a = erp2rpy(erp)
+rpy_b_wrt_a = erp2rpy(erp_b_wrt_a)
+```
+
+For `RollPitchYawZXY`, the sequence is 3-1-2 (ZXY): yaw first, then roll, then pitch. Equivalently:
+
+```julia
+rpy_zxy_b_wrt_a = RPYZXY(0.1, 0.2, 0.3)
+erp_b_wrt_a = compose(erpy(0.2), erpx(0.1), erpz(0.3))
+rpy_zxy_b_wrt_a = erp2rpyZXY(erp_b_wrt_a)
 ```
 
 ## Operations
@@ -147,9 +158,18 @@ RPY(0., 0., 0.)
 RPY(; roll = 0., pitch = 0., yaw = 0.)
 ```
 
+For `RollPitchYawZXY`, provide roll, pitch, and yaw:
+
+```julia
+RPYZXY(0., 0., 0.)
+RPYZXY(; roll = 0., pitch = 0., yaw = 0.)
+```
+
 ## Human Interface Types
 
 There are a couple of types whose only purpose (in this package) is human input and output. For example, there's a type called `RPYDeg` that lets the user specify the angles in degrees. That type should be converted to `RPY` either via `convert(RPY, my_rpy_deg)` or `deg2rad(my_rpy_deg)`. The `RPY` type is what should be used by the program.
+
+Likewise, `RPYZXYDeg` should be converted to `RPYZXY` via `convert(RPYZXY, my_rpy_zxy_deg)` or `deg2rad(my_rpy_zxy_deg)`.
 
 `AADeg` is the other "human interface" type.
 

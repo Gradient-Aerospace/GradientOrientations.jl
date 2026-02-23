@@ -24,6 +24,7 @@ include("test_dcm.jl")
 include("test_erp.jl")
 include("test_rv.jl")
 include("test_rpy.jl")
+include("test_rpyZXY.jl")
 
 # Now that we've tested ERPs, let's test the other types by converting to/from ERPs.
 
@@ -34,6 +35,7 @@ include("test_rpy.jl")
     ref_aa = erp2aa(ref_erp)
     ref_dcm = erp2dcm(ref_erp)
     ref_rpy = erp2rpy(ref_erp)
+    ref_rpyZXY = erp2rpyZXY(ref_erp)
     ref_rv = erp2rv(ref_erp)
 
     v = SA[2., -3., 4.]
@@ -50,6 +52,7 @@ include("test_rpy.jl")
 
                 rpy = RPY(roll, pitch, yaw)
                 erp = rpy2erp(rpy)
+                rpyZXY = erp2rpyZXY(erp)
                 aa = erp2aa(erp)
                 dcm = erp2dcm(erp)
                 rv = erp2rv(erp)
@@ -58,24 +61,28 @@ include("test_rpy.jl")
                 @test reframe(aa, v) ≈ v_expected atol = v_tol
                 @test reframe(dcm, v) ≈ v_expected atol = v_tol
                 @test reframe(rpy, v) ≈ v_expected atol = v_tol
+                @test reframe(rpyZXY, v) ≈ v_expected atol = v_tol
                 @test reframe(rv, v) ≈ v_expected atol = v_tol
 
                 erp_expected = compose(erp, ref_erp)
                 @test compose(aa, ref_aa) ≈ erp_expected atol = erp_tol
                 @test compose(dcm, ref_dcm) ≈ erp_expected atol = erp_tol
                 @test compose(rpy, ref_rpy) ≈ erp_expected atol = erp_tol
+                @test compose(rpyZXY, ref_rpyZXY) ≈ erp_expected atol = erp_tol
                 @test compose(rv, ref_rv) ≈ erp_expected atol = erp_tol
 
                 erp_expected = difference(erp, ref_erp)
                 @test difference(aa, ref_aa) ≈ erp_expected atol = erp_tol
                 @test difference(dcm, ref_dcm) ≈ erp_expected atol = erp_tol
                 @test difference(rpy, ref_rpy) ≈ erp_expected atol = erp_tol
+                @test difference(rpyZXY, ref_rpyZXY) ≈ erp_expected atol = erp_tol
                 @test difference(rv, ref_rv) ≈ erp_expected atol = erp_tol
 
                 angle_expected = distance(erp, ref_erp)
                 @test distance(aa, ref_aa) ≈ angle_expected atol = erp_tol
                 @test distance(dcm, ref_dcm) ≈ angle_expected atol = erp_tol
                 @test distance(rpy, ref_rpy) ≈ angle_expected atol = erp_tol
+                @test distance(rpyZXY, ref_rpyZXY) ≈ angle_expected atol = erp_tol
                 @test distance(rv, ref_rv) ≈ angle_expected atol = erp_tol
 
                 for f in LinRange(0., 1., 5)
@@ -83,6 +90,7 @@ include("test_rpy.jl")
                     @test interpolate(aa, ref_aa, f) ≈ erp_expected atol = erp_tol
                     @test interpolate(dcm, ref_dcm, f) ≈ erp_expected atol = erp_tol
                     @test interpolate(rpy, ref_rpy, f) ≈ erp_expected atol = erp_tol
+                    @test interpolate(rpyZXY, ref_rpyZXY, f) ≈ erp_expected atol = erp_tol
                     if !isapprox(interpolate(rpy, ref_rpy, f), erp_expected; atol = erp_tol)
                         @show rpy
                         @show ref_rpy
@@ -97,12 +105,14 @@ include("test_rpy.jl")
                 @test inv(aa) ≈ erp_expected atol = erp_tol
                 @test inv(dcm) ≈ erp_expected atol = erp_tol
                 @test inv(rpy) ≈ erp_expected atol = erp_tol
+                @test inv(rpyZXY) ≈ erp_expected atol = erp_tol
                 @test inv(rv) ≈ erp_expected atol = erp_tol
 
                 eltype(aa) == Float64
                 eltype(dcm) == Float64
                 eltype(erp) == Float64
                 eltype(rpy) == Float64
+                eltype(rpyZXY) == Float64
                 eltype(rv) == Float64
 
             end
@@ -115,6 +125,10 @@ end
 
     rpy = RPYDeg_F64(0., 0., 90.)
     erp = convert(ERP, rpy)
+    @test erp ≈ erpz(π/2)
+
+    rpyZXY = RPYZXYDeg_F64(0., 0., 90.)
+    erp = convert(ERP, rpyZXY)
     @test erp ≈ erpz(π/2)
 
     aa = AADeg_F64(SA[1., 0., 0.], 90)
