@@ -39,11 +39,12 @@ export other, smallest, rate
 
 # Users can `convert` from one type to another, but this lets them specify their intention
 # more clearly and is easier to write.
-export aa2dcm, aa2erp, aa2rpy, aa2rv
-export dcm2aa, dcm2erp, dcm2rpy, dcm2rv
-export erp2aa, erp2dcm, erp2rpy, erp2rv
-export rv2aa, rv2dcm, rv2erp, rv2rpy
+export aa2dcm, aa2erp, aa2rpy, aa2rpyZXY, aa2rv
+export dcm2aa, dcm2erp, dcm2rpy, dcm2rpyZXY, dcm2rv
+export erp2aa, erp2dcm, erp2rpy, erp2rpyZXY, erp2rv
+export rv2aa, rv2dcm, rv2erp, rv2rpy, rv2rpyZXY
 export rpy2aa, rpy2dcm, rpy2erp, rpy2rv
+export rpyZXY2aa, rpyZXY2dcm, rpyZXY2erp, rpyZXY2rv
 
 # Composition operator
 export ⊗
@@ -55,6 +56,7 @@ include("erp.jl")
 include("aa.jl")
 include("dcm.jl")
 include("rpy.jl")
+include("rpyZXY.jl")
 include("rv.jl")
 include("conversions.jl")
 

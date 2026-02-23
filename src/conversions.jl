@@ -299,3 +299,133 @@ function rpy2rv(rpy::RPY)
 end
 Base.convert(::Type{RV}, rpy::RPY) = rpy2rv(rpy) # Type is not specified on the LHS.
 Base.convert(::Type{RV{T}}, rpy::RPY{T}) where {T} = rpy2rv(rpy) # Type is not specified on the LHS.
+
+################
+# RPYZXY to... #
+################
+
+"Returns the AxisAngle for the given RollPitchYawZXY."
+function rpyZXY2aa(rpy::RPYZXY)
+    return erp2aa(rpyZXY2erp(rpy))
+end
+Base.convert(::Type{AA}, rpy::RPYZXY) = rpyZXY2aa(rpy) # Type is not specified on the LHS.
+Base.convert(::Type{AA{T}}, rpy::RPYZXY{T}) where {T} = rpyZXY2aa(rpy) # Type is not specified on the LHS.
+
+"Returns the DirectionCosineMatrix for the given RollPitchYawZXY."
+function rpyZXY2dcm(rpy::RPYZXY)
+    sy, cy = sincos(rpy.yaw)
+    sr, cr = sincos(rpy.roll)
+    sp, cp = sincos(rpy.pitch)
+    return DCM(
+        @SMatrix [
+            cy * cp - sr * sy * sp     sy * cp + sr * cy * sp     -cr * sp;
+            -cr * sy                   cr * cy                   sr;
+            cy * sp + sr * sy * cp     sy * sp - sr * cy * cp     cr * cp;
+        ]
+    )
+end
+Base.convert(::Type{DCM}, rpy::RPYZXY) = rpyZXY2dcm(rpy) # Type is not specified on the LHS.
+Base.convert(::Type{DCM{T}}, rpy::RPYZXY{T}) where {T} = rpyZXY2dcm(rpy) # Type is not specified on the LHS.
+
+"Returns the EulerRodriguesParameters for the given RollPitchYawZXY."
+function rpyZXY2erp(rpy::RPYZXY)
+    sy, cy = sincos(rpy.yaw / 2)
+    sr, cr = sincos(rpy.roll / 2)
+    sp, cp = sincos(rpy.pitch / 2)
+    return ERP(
+        cp * cy * sr - cr * sp * sy,
+        cr * cy * sp + cp * sr * sy,
+        cy * sp * sr + cr * cp * sy,
+        cp * cr * cy - sp * sr * sy,
+    )
+end
+Base.convert(::Type{ERP}, rpy::RPYZXY) = rpyZXY2erp(rpy) # Type is not specified on the LHS.
+Base.convert(::Type{ERP{T}}, rpy::RPYZXY{T}) where {T} = rpyZXY2erp(rpy)
+Base.convert(::Type{ERP}, rpy_deg::RPYZXYDeg) = rpyZXY2erp(deg2rad(rpy_deg)) # Type is not specified on the LHS.
+Base.convert(::Type{ERP{T}}, rpy_deg::RPYZXYDeg{T}) where {T} = rpyZXY2erp(deg2rad(rpy_deg))
+
+"Returns the RotationVector for the given RollPitchYawZXY."
+function rpyZXY2rv(rpy::RPYZXY)
+    return erp2rv(rpyZXY2erp(rpy))
+end
+Base.convert(::Type{RV}, rpy::RPYZXY) = rpyZXY2rv(rpy) # Type is not specified on the LHS.
+Base.convert(::Type{RV{T}}, rpy::RPYZXY{T}) where {T} = rpyZXY2rv(rpy) # Type is not specified on the LHS.
+
+################
+# ... to RPYZXY #
+################
+
+"Returns the RollPitchYawZXY for the given AxisAngle."
+function aa2rpyZXY(aa::AA)
+    return erp2rpyZXY(aa2erp(aa))
+end
+Base.convert(::Type{RPYZXY}, aa::AA) = aa2rpyZXY(aa) # Type is not specified on the LHS.
+Base.convert(::Type{RPYZXY{T}}, aa::AA{T}) where {T} = aa2rpyZXY(aa) # Type is not specified on the LHS.
+
+"Returns the RollPitchYawZXY for the given DirectionCosineMatrix."
+function dcm2rpyZXY(dcm::DCM{T}) where {T}
+
+    # We use the fact that (for 3-1-2) sin(roll) = R[2, 3].
+    sin_roll = dcm.matrix[2, 3]
+
+    if sin_roll <= -one(T) + eps(one(T))
+        roll = -π/2
+        yaw = zero(T)
+        # At roll = -π/2, yaw and pitch are indistinguishable. Choose yaw = 0.
+        pitch = -atan(dcm.matrix[1, 2], dcm.matrix[1, 1])
+    elseif sin_roll >= one(T) - eps(one(T))
+        roll = π/2
+        yaw = zero(T)
+        # At roll = +π/2, yaw and pitch are indistinguishable. Choose yaw = 0.
+        pitch = atan(dcm.matrix[1, 2], dcm.matrix[1, 1])
+    else
+        roll = asin(clamp(sin_roll, -one(T), one(T)))
+        yaw = atan(-dcm.matrix[2, 1], dcm.matrix[2, 2])
+        pitch = atan(-dcm.matrix[1, 3], dcm.matrix[3, 3])
+    end
+
+    return RPYZXY{T}(roll, pitch, yaw)
+
+end
+Base.convert(::Type{RPYZXY}, dcm::DCM) = dcm2rpyZXY(dcm) # Type is not specified on the LHS.
+Base.convert(::Type{RPYZXY{T}}, dcm::DCM{T}) where {T} = dcm2rpyZXY(dcm) # Type is not specified on the LHS.
+
+"Returns the RollPitchYawZXY for the given EulerRodriguesParameters."
+function erp2rpyZXY(erp::EulerRodriguesParameters{T}) where {T}
+
+    q0 = erp.s
+    q1 = erp.x
+    q2 = erp.y
+    q3 = erp.z
+
+    tol = 1e-12
+
+    # For 3-1-2, sin(roll) = R[2,3] = 2*(q2*q3 + q0*q1)
+    sin_roll = 2 * (q2 * q3 + q0 * q1)
+
+    if sin_roll >= one(T) - tol
+        roll = π/2
+        yaw = zero(T)
+        pitch = atan(2 * (q1 * q2 + q0 * q3), q0^2 + q1^2 - q2^2 - q3^2)
+    elseif sin_roll < -one(T) + tol
+        roll = -π/2
+        yaw = zero(T)
+        pitch = -atan(2 * (q1 * q2 + q0 * q3), q0^2 + q1^2 - q2^2 - q3^2)
+    else
+        roll = asin(clamp(sin_roll, -one(T), one(T)))
+        yaw = atan(2 * (q0 * q3 - q1 * q2), q0^2 - q1^2 + q2^2 - q3^2)
+        pitch = atan(2 * (q0 * q2 - q1 * q3), q0^2 - q1^2 - q2^2 + q3^2)
+    end
+
+    return RPYZXY{T}(roll, pitch, yaw)
+
+end
+Base.convert(::Type{RPYZXY}, erp::ERP) = erp2rpyZXY(erp) # Type is not specified on the LHS.
+Base.convert(::Type{RPYZXY{T}}, erp::ERP{T}) where {T} = erp2rpyZXY(erp) # Types are the same.
+
+"Returns the RollPitchYawZXY for the given RotationVector."
+function rv2rpyZXY(rv::RV)
+    return erp2rpyZXY(rv2erp(rv))
+end
+Base.convert(::Type{RPYZXY}, rv::RV) = rv2rpyZXY(rv) # Type is not specified on the LHS.
+Base.convert(::Type{RPYZXY{T}}, rv::RV{T}) where {T} = rv2rpyZXY(rv) # Type is not specified on the LHS.
